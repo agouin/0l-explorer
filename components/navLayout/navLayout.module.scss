@@ -36,6 +36,23 @@
   z-index: 10;
 }
 
+.full {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
 .content {
   padding: 16px;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px;
+}
+
+.footerText {
+  color: white;
 }
