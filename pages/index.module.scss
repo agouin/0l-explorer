@@ -13,3 +13,19 @@
 .pagerButton {
   margin: 8px;
 }
+
+.versionSearch {
+  max-width: 200px;
+}
+
+.searchContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.outerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-content: center;
+}

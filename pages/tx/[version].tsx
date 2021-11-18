@@ -58,8 +58,8 @@ const AddressPage = ({
   const hash = get(transaction, 'version')
   return (
     <NavLayout>
-      <h1 className={classes.address} onClick={copyTextToClipboard.bind(this, hash)}>Transaction <span className={classes.addressText}>{hash}</span></h1>
-      <TransactionView transaction={transaction}/>
+      
+      <TransactionView transaction={transaction} top={<h1 className={classes.address} onClick={copyTextToClipboard.bind(this, hash)}>Transaction <span className={classes.addressText}>{hash}</span></h1>}/>
     </NavLayout>
   )
 }

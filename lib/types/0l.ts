@@ -1,4 +1,5 @@
 import { get } from 'lodash'
+import { capitalCase } from 'change-case'
 
 export interface Amount {
   amount: number
@@ -224,7 +225,7 @@ export const getTransactionMin = (tx: Transaction): TransactionMin => {
   let type: string = tx.transaction.type
   if (type === 'blockmetadata') type = 'Block Metadata'
   return {
-    type,
+    type: capitalCase(type),
     hash,
     sender,
     version,

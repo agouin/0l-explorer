@@ -2,8 +2,14 @@ import { Transaction } from '../../lib/types/0l'
 import { get } from 'lodash'
 import { Table } from 'antd'
 import { ReactNode } from 'react'
+import classes from './transactionView.module.scss'
 
-const TransactionView = ({ transaction }: { transaction: Transaction }) => {
+interface TransactionViewProps {
+  transaction: Transaction
+  top?: ReactNode | undefined
+}
+
+const TransactionView = ({ transaction, top }: TransactionViewProps) => {
   if (!transaction) return null
   const {
     transaction: tx,
@@ -53,7 +59,9 @@ const TransactionView = ({ transaction }: { transaction: Transaction }) => {
           info.push({
             key: 'recipient',
             title: 'Onboard Address',
-            value: <a href={`/address/${onboard_address}`}>{onboard_address}</a>,
+            value: (
+              <a href={`/address/${onboard_address}`}>{onboard_address}</a>
+            ),
           })
         }
       }
@@ -95,14 +103,20 @@ const TransactionView = ({ transaction }: { transaction: Transaction }) => {
       break
   }
   return (
-    <Table
-      pagination={false}
-      columns={[
-        { key: 'key', dataIndex: 'title', title: 'Key' },
-        { key: 'value', dataIndex: 'value', title: 'Value' },
-      ]}
-      dataSource={info}
-    />
+    <div className={classes.tableContainer}>
+      <div className={classes.inner}>
+        {top}
+        <Table
+          pagination={false}
+          scroll={{ x: true }}
+          columns={[
+            { key: 'key', dataIndex: 'title', title: 'Key' },
+            { key: 'value', dataIndex: 'value', title: 'Value' },
+          ]}
+          dataSource={info}
+        />
+      </div>
+    </div>
   )
 }
 

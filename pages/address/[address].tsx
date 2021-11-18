@@ -1,13 +1,11 @@
 import { message } from 'antd'
 import { GetServerSideProps } from 'next'
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import classes from './address.module.scss'
-import { io } from 'socket.io-client'
 import { getAccount, getAccountTransactions } from '../../lib/api/node'
 import NavLayout from '../../components/navLayout/navLayout'
 import { AxiosResponse } from 'axios'
 import {
-  Transaction,
   Account,
   AccountResponse,
   TransactionsResponse,
@@ -80,13 +78,12 @@ const copyTextToClipboard = async (text) => {
 const AddressPage = ({
   account,
   transactions,
-  errors
+  errors,
 }: {
   account: Account
   transactions: TransactionMin[]
   errors: NodeRPCError[]
 }) => {
-
   useEffect(() => {
     if (errors.length > 0) {
       console.error(errors)
@@ -95,13 +92,29 @@ const AddressPage = ({
       }
     }
   }, [])
-  
+
   const balance = get(account, 'balances[0].amount') || 0
   return (
     <NavLayout>
-      <h1 className={classes.address} onClick={copyTextToClipboard.bind(this, account.address)}>Address <span className={classes.addressText}>{account.address}</span></h1>
-      <h3 className={classes.balance} onClick={copyTextToClipboard.bind(this, balance)}>Balance:  <span className={classes.balanceText}>{balance / 1000000}</span></h3>
-      <TransactionsTable transactions={transactions}/>
+      <TransactionsTable
+        transactions={transactions}
+        top={
+          <div>
+            <h1
+              className={classes.address}
+              onClick={copyTextToClipboard.bind(this, account.address)}>
+              Address{' '}
+              <span className={classes.addressText}>{account.address}</span>
+            </h1>
+            <h3
+              className={classes.balance}
+              onClick={copyTextToClipboard.bind(this, balance)}>
+              Balance:{' '}
+              <span className={classes.balanceText}>{balance / 1000000}</span>
+            </h3>
+          </div>
+        }
+      />
     </NavLayout>
   )
 }
@@ -126,26 +139,23 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }),
   ])
 
-  console.log({
-    accountsRes,
-    accountsStatus,
-    transactionsRes,
-    transactionsStatus,
-  })
-
   const errors = []
   if (accountsRes.error) errors.push(accountsRes.error)
   if (transactionsRes.error) errors.push(transactionsRes.error)
 
   const account: Account = accountsStatus === 200 ? accountsRes.result : null
   const transactions: TransactionMin[] =
-    transactionsStatus === 200 && !transactionsRes.error ? transactionsRes.result.sort((a, b) => b.version - a.version).map(tx => getTransactionMin(tx)) : null
+    transactionsStatus === 200 && !transactionsRes.error
+      ? transactionsRes.result
+          .sort((a, b) => b.version - a.version)
+          .map((tx) => getTransactionMin(tx))
+      : null
 
   return {
     props: {
       account,
       transactions,
-      errors
+      errors,
     },
   }
 }
