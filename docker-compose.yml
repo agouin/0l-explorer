@@ -1,0 +1,21 @@
+version: '3'
+services:
+  0l:
+    build: .
+    environment:
+      - PORT=3027
+      - NEXT_TELEMETRY_DISABLED=1
+      - NODE_ENV=development
+      - NODE_RPC_ADDRESS=http://176.57.189.120:8080
+    ports:
+      - "3027:3027"
+    volumes:
+      - ./components:/code/components
+      - ./lib:/code/lib
+      - ./styles:/code/styles
+      - ./pages:/code/pages
+      - ./public:/code/public
+      - ./index.js:/code/index.js
+      - ./next-env.d.ts:/code/next-env.d.ts
+      - ./tsconfig.json:/code/tsconfig.json
+      - ./package.json:/code/package.json

@@ -1,0 +1,129 @@
+.noBottomMargin {
+  margin-bottom: 0px;
+}
+
+.title {
+  @extend .noBottomMargin;
+  color: white;
+}
+
+.priceLabel {
+  @extend .noBottomMargin;
+  color: #cccccc;
+  font-weight: 200;
+}
+
+.price {
+  @extend .noBottomMargin;
+  color: white;
+  font-weight: 600;
+}
+
+.balances_table {
+  margin-top: 16px;
+}
+
+.refresh_button {
+  margin-left: 16px;
+}
+
+.copyToClipboard {
+  font-size: 12pt;
+  cursor: pointer;
+  color: #0099ff;
+  margin-left: 8px;
+}
+
+.coinIcon {
+  width: 24px;
+  margin-right: 8px;
+  border-radius: 50%;
+}
+
+.flexCenter {
+  display: flex;
+  align-items: center;
+}
+
+.editIcons {
+  font-size: 16pt;
+  margin-left: 4px;
+}
+
+.editPencil {
+  font-size: 14pt;
+  margin-left: 8px;
+}
+
+.tableContainer {
+  display: flex;
+  justify-content: center;
+}
+
+.inner {
+  padding: 16px;
+  flex: 0 1 1500px;
+}
+
+.totals {
+  /*background-color: #2d265a;*/
+  background-color: rgb(0, 78, 65);
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+  justify-content: flex-start;
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+}
+
+.cryptoName {
+  display: flex;
+  flex-direction: column;
+}
+
+.cryptoNameContainer {
+  @extend .flexCenter;
+  max-width: 320px;
+}
+
+.cryptoAddress {
+  color: #cccccc;
+  font-size: 9pt;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.poweredBy {
+  color: white;
+  right: 0;
+  position: absolute;
+  margin-bottom: 4px;
+  margin-right: 4px;
+  margin-left: 4px;
+}
+
+.negativeTrend {
+  background-color: rgb(128, 0, 0);
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+.positiveTrend {
+  background-color: rgb(0, 112, 84);
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin-left: 4px;
+
+}
+
+
+@media only screen and (max-width: 1046px) {
+  .tableContainer {
+    display: block;
+  }
+}

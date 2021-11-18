@@ -1,0 +1,41 @@
+.navBarContainer {
+  width: 100%;
+  background-color: rgb(0, 78, 65);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  z-index: 1000;
+}
+
+.homeLink {
+  cursor: pointer;
+}
+
+.title {
+  color: white;
+  font-size: 20pt;
+}
+
+.search {
+  max-width: 500px;
+  margin-left: auto;
+}
+
+.spinContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #ffffff19;
+  z-index: 10;
+}
+
+.content {
+  padding: 16px;
+}

@@ -1,0 +1,57 @@
+body {
+  /*background: rgb(23, 15, 52);*/
+  background: rgb(0, 36, 28);
+  
+}
+
+.ant-table {
+  /*background-color: rgb(35, 29, 75);*/
+  background-color: rgb(0, 48, 40);
+  color: white;
+  font-weight: 200;
+}
+
+.ant-table-tbody > tr.ant-table-row-level-0:hover > td {
+  background: unset;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.ant-table-thead > tr > th {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.ant-table-thead .ant-table-cell{
+  /*background-color: rgb(45, 39, 85);*/
+  background-color: rgb(0, 63, 52);
+  color: #ccc;
+}
+
+.ant-table-column-sort {
+  background: unset!important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected > td {
+  background: unset!important;
+}
+
+.ant-checkbox-inner {
+  background-color: unset!important;
+}
+
+.ant-btn-primary {
+  background-color: #00806a;
+  border-color:  #004e41;
+}
+
+.ant-btn-primary:hover {
+  background-color: #004e41;
+  border-color:  #004e41;
+}
+
+.ant-btn-primary:focus {
+  background-color: #007c67;
+  border-color:  #007c67;
+}
