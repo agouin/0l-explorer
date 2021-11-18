@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "ol-explorer-service"
+spec:
+  ports:
+    - port: 3027
+      nodePort: 32322
+      protocol: TCP
+  type: NodePort
+  selector:
+    app: "ol-explorer"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ol-explorer-deployment
+  labels:
+    app: ol-explorer
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ol-explorer
+  template:
+    metadata:
+      labels:
+        app: ol-explorer
+    spec:
+      containers:
+      - name: ol-explorer
+        env:
+        - name: PORT
+          value: "3027"
+        - name: NODE_RPC_ADDRESS
+          value: $NODE_RPC_ADDRESS$
+        image: $CONTAINER_IMAGE$
+        ports:
+        - containerPort: 3027
+        imagePullPolicy: "Always"

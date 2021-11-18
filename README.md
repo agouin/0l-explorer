@@ -39,10 +39,19 @@ docker-compose build
 ## Build for production
 
 ```bash
-docker build --no-cache --pull --rm -f "Dockerfile" -t 0lexplorer:latest "." <
+docker build --no-cache -t 0l-explorer .
 ```
 
 Now distribute the `0lexplorer:latest` docker image to your desired container orchestration platform.
+An example kubernetes template file is provided in [0l-explorer.yml](0l-explorer.yml).
+
+Replace `$NODE_RPC_ADDRESS$` and `$CONTAINER_IMAGE$` in the template with valid values for the node to use for RPC calls, and the container repository URL, respectively.
+
+It can be deployed with:
+
+```bash
+kubectl apply -f 0l-explorer.yml
+```
 
 ## Donations
 

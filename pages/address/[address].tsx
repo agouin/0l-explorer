@@ -86,12 +86,16 @@ const AddressPage = ({
   transactions: TransactionMin[]
   errors: NodeRPCError[]
 }) => {
-  if (errors.length > 0) {
-    console.error(errors)
-    for (const error of errors) {
-      message.error(`${error.message} (${error.code})`)
+
+  useEffect(() => {
+    if (errors.length > 0) {
+      console.error(errors)
+      for (const error of errors) {
+        message.error(`${error.message} (${error.code})`)
+      }
     }
-  }
+  }, [])
+  
   const balance = get(account, 'balances[0].amount') || 0
   return (
     <NavLayout>
