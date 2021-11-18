@@ -1,6 +1,7 @@
 # 0L Blockchain Explorer
 
 Explore 0L addresses and transactions
+
 React webapp using next.js
 
 ## Setup
