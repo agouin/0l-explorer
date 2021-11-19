@@ -2,13 +2,14 @@ import NavLayout from '../components/navLayout/navLayout'
 import { GetServerSideProps } from 'next'
 import { getTransactions, getMetadata } from '../lib/api/node'
 import { CaretLeftFilled, CaretRightFilled } from '@ant-design/icons'
-import { getTransactionMin, TransactionMin } from '../lib/types/0l'
+import { getTransactionMin, TransactionMin, Vitals } from '../lib/types/0l'
 import TransactionsTable from '../components/transactionsTable/transactionsTable'
 import classes from './index.module.scss'
-import { Button, message } from 'antd'
+import { Button, message, Progress, Tooltip } from 'antd'
 import Search from 'antd/lib/input/Search'
+import EventSource from 'eventsource'
 
-const MIN_VERSION = 3542670
+const MIN_VERSION = 0
 const TX_PER_PAGE = 100
 
 interface IndexPageProps {
@@ -16,6 +17,11 @@ interface IndexPageProps {
   startVersion: number
   latest: boolean
   previousIsLatest: boolean
+  vitals: Vitals
+}
+
+const numberWithCommas = (x) => {
+  return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
 }
 
 const IndexPage = ({
@@ -23,7 +29,9 @@ const IndexPage = ({
   latest,
   startVersion,
   previousIsLatest,
+  vitals,
 }: IndexPageProps) => {
+  console.log({ vitals })
   const handleGoToVersion = (search: string) => {
     if (!search) {
       window.location.href = '/'
@@ -44,43 +52,101 @@ const IndexPage = ({
           href={
             previousIsLatest ? '/' : `/?start=${startVersion + TX_PER_PAGE}`
           }>
-          <Button type="primary" className={classes.pagerButton}>
+          <Button type="primary" size="small" className={classes.pagerButton}>
             <CaretLeftFilled />
           </Button>
         </a>
-      )}
+      ) || <Button type="primary" size="small" className={classes.pagerButton} disabled>
+      <CaretLeftFilled />
+    </Button>}
       <a href={`/?start=${startVersion - TX_PER_PAGE}`}>
-        <Button type="primary" className={classes.pagerButton}>
+        <Button type="primary" size="small" className={classes.pagerButton}>
           <CaretRightFilled />
         </Button>
       </a>
       {!latest && (
         <a href="/">
-          <Button type="primary" className={classes.pagerButton}>
             Go to latest
-          </Button>
         </a>
       )}
     </div>
   )
+
+  const epochProgress = Math.round(vitals.chain_view.epoch_progress * 100)
+
+  const height = Math.max(vitals.chain_view.height, transactions.length > 0 ? transactions[0].version : 0)
+
   return (
     <NavLayout>
+      <div></div>
       <TransactionsTable
         transactions={transactions}
         top={
-          <div className={classes.outerHeader}>
-            <div className={classes.header}>
-              <span className={classes.title}>Recent Transactions</span>
-              {pager}
+          <div>
+            <div className={classes.infoRow}>
+              <span className={classes.infoText}>
+                Height:{' '}
+                <span className={classes.thinText}>
+                  {height}
+                </span>
+              </span>
+              <span className={classes.infoText}>
+                Epoch:{' '}
+                <span className={classes.thinText}>
+                  {vitals.chain_view.epoch}
+                </span>
+              </span>
+              <span className={classes.infoText}>
+                Epoch Progress:{' '}
+                <span className={classes.thinText}>{epochProgress}%</span>
+              </span>
             </div>
-            <div className={classes.searchContainer}>
-              <Search
-                className={classes.versionSearch}
-                type="number"
-                placeholder="Jump to version in list"
-                onSearch={handleGoToVersion}
-                allowClear
-              />
+            <Progress
+              showInfo={false}
+              trailColor="#003028"
+              strokeColor="#00806a"
+              className={classes.progressBar}
+              strokeLinecap="square"
+              percent={epochProgress}
+            />
+            <div className={classes.infoRow}>
+              <span className={classes.infoText}>
+                Validators:{' '}
+                <Tooltip title={<span className={classes.infoText}>
+                Can create account:{' '}
+                <span className={classes.thinText}>
+                  {
+                    vitals.chain_view.validator_view.filter(
+                      (validator) =>
+                        validator.epochs_since_last_account_creation > 7
+                    ).length
+                  }
+                </span>
+              </span>}>
+                <span className={classes.thinText}>
+                  {vitals.chain_view.validator_count}
+                </span>
+                </Tooltip>
+              </span>
+              <span className={classes.infoText}>
+                Total Supply:{' '}
+                <span className={classes.thinText}>{numberWithCommas(vitals.chain_view.total_supply)}</span>
+              </span>
+            </div>
+            <div className={classes.outerHeader}>
+              <div className={classes.header}>
+                <span className={classes.title}>Transactions</span>
+                {pager}
+              </div>
+              <div className={classes.searchContainer}>
+                <Search
+                  className={classes.versionSearch}
+                  type="number"
+                  placeholder="Jump to height"
+                  onSearch={handleGoToVersion}
+                  allowClear
+                />
+              </div>
             </div>
           </div>
         }
@@ -93,17 +159,38 @@ const IndexPage = ({
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { query } = ctx
 
+  const { NODE_HOSTNAME } = process.env
+
   let startVersion
 
   if (query && query.start) {
     startVersion = parseInt(query.start as string)
   }
 
-  const { data: metadataRes, status: metadataStatus } = await getMetadata({})
+  const getVitals = new Promise((res, rej) => {
+    const uri = `http://${NODE_HOSTNAME}:3030/vitals`
+    const sse = new EventSource(uri)
+    sse.onmessage = (msg) => {
+      console.log({ msg })
+      sse.close()
+      res(JSON.parse(msg.data))
+    }
+    sse.onerror = (err) => {
+      sse.close()
+      rej(err)
+    }
+  })
+
+  const [
+    { data: metadataRes, status: metadataStatus },
+    vitals,
+  ] = await Promise.all([getMetadata({}), await getVitals])
   if (metadataStatus !== 200) return { props: {} }
   const {
     result: { version },
   } = metadataRes
+
+  console.log({ vitals })
 
   if (startVersion === undefined || isNaN(startVersion)) {
     startVersion = version - TX_PER_PAGE + 10
@@ -133,6 +220,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       startVersion,
       latest,
       previousIsLatest,
+      vitals,
     },
   }
 }

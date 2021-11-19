@@ -1,7 +1,7 @@
 body {
   /*background: rgb(23, 15, 52);*/
   background: rgb(0, 36, 28);
-  
+  color: white;
 }
 
 .ant-table {
@@ -62,4 +62,8 @@ a {
 
 a:hover {
   color: #acffea;
+}
+
+.ant-progress-text {
+  color: white;
 }

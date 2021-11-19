@@ -29,3 +29,21 @@
   justify-content: space-between;
   align-content: center;
 }
+
+.progressBar {
+  color: white;
+}
+
+.infoRow {
+  display: flex;
+}
+
+.infoText {
+  margin-right: 8px;
+  font-size: 14pt;
+  display: block;
+}
+
+.thinText {
+  font-weight: 200;
+}

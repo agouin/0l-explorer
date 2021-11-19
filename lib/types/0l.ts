@@ -143,11 +143,20 @@ export interface VMStatusMiscellaneousError extends VMStatus {
 
 export interface Transaction {
   version: number
-  transaction: BlockMetadataTransaction | WriteSetTransaction | UserTransaction | UnknownTransaction
+  transaction:
+    | BlockMetadataTransaction
+    | WriteSetTransaction
+    | UserTransaction
+    | UnknownTransaction
   hash: string
   bytes: string
   events: Event[]
-  vm_status: VMStatusExecuted | VMStatusOutOfGas | VMStatusMoveAbort | VMStatusExecutionFailure | VMStatusMiscellaneousError
+  vm_status:
+    | VMStatusExecuted
+    | VMStatusOutOfGas
+    | VMStatusMoveAbort
+    | VMStatusExecutionFailure
+    | VMStatusMiscellaneousError
   gas_used: number
 }
 
@@ -176,7 +185,7 @@ export interface CurrenciesResponse extends NodeRPCResponse {
 }
 
 export interface Metadata {
-  timestamp: number,
+  timestamp: number
   version: number
   chain_id: number
 }
@@ -193,11 +202,13 @@ export interface TransactionMin {
   recipient?: string
   sender?: string
   amount?: number
+  timestamp?: number
 }
 
 export const getTransactionMin = (tx: Transaction): TransactionMin => {
   const script_function = get(tx, 'transaction.script.function_name')
   const status = get(tx, 'vm_status.type')
+  
   const { version, hash } = tx
   const sender = get(tx, 'transaction.sender') || null
   if (script_function === 'create_user_by_coin_tx') {
@@ -209,26 +220,132 @@ export const getTransactionMin = (tx: Transaction): TransactionMin => {
         status,
         sender,
         version,
-        hash
+        hash,
       }
     }
-
-  } else if (script_function === 'minerstate_commit' || script_function === 'minerstate_commit_by_operator') {
+  } else if (
+    script_function === 'minerstate_commit' ||
+    script_function === 'minerstate_commit_by_operator'
+  ) {
     return {
       type: 'Miner Proof',
       status,
       sender,
       version,
-      hash
+      hash,
     }
   }
   let type: string = tx.transaction.type
-  if (type === 'blockmetadata') type = 'Block Metadata'
+  if (type === 'blockmetadata') {
+    type = 'Block Metadata'
+    const timestamp = (tx.transaction as BlockMetadataTransaction).timestamp_usecs
+    return {
+      type,
+      timestamp,
+      hash,
+      sender,
+      version,
+      status,
+    }
+  }
   return {
     type: capitalCase(type),
     hash,
     sender,
     version,
-    status
+    status,
+  }
+}
+
+export interface Vitals {
+  items: {
+    configs_exist: boolean
+    db_files_exist: boolean
+    db_restored: boolean
+    account_created: boolean
+    node_running: boolean
+    miner_running: boolean
+    web_running: boolean
+    node_mode: string
+    is_synced: boolean
+    sync_height: number
+    sync_delay: number
+    validator_set: boolean
+    has_autopay: boolean
+    has_operator_set: boolean
+    has_operator_positive_balance: boolean
+  }
+  account_view: {
+    address: string
+    balance: number
+    is_in_validator_set: boolean
+    autopay: {
+      payments: {
+        uid: number
+        in_type: number
+        type_desc: string
+        payee: string
+        end_epoch: number
+        prev_balance: number
+      }[]
+      recurring_sum: number
+    }
+    operator_account: string
+    operator_balance: number
+  }
+  chain_view: {
+    epoch: number
+    height: number
+    validator_count: number
+    total_supply: number
+    latest_epoch_change_time: number
+    epoch_progress: number
+    waypoint: string
+    upgrade: {
+      upgrade: {
+        id: number
+        validators_voted: any[]
+        vote_counts: any[]
+        votes: any[]
+        vote_window: number
+        version_id: number
+        consensus: {
+          data: any[]
+          validators: any[]
+          hash: any[]
+          total_weight: number
+        }
+      }
+    }
+    validator_view: {
+      account_address: string
+      pub_key: string
+      voting_power: number
+      full_node_ip: string
+      validator_ip: string
+      tower_height: number
+      tower_epoch: number
+      count_proofs_in_epoch: number
+      epochs_validating_and_mining: number
+      contiguous_epochs_validating_and_mining: number
+      epochs_since_last_account_creation: number
+      vote_count_in_epoch: number
+      prop_count_in_epoch: number
+      validator_config: {
+        operator_account: string
+        operator_has_balance: boolean
+      }
+      autopay: {
+        payments: {
+          uid: number
+          in_type: number
+          type_desc: string
+          payee: string
+          end_epoch: number
+          prev_balance: number
+        }[]
+        recurring_sum: number
+      }
+    }[]
   }
 }

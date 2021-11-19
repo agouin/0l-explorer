@@ -108,7 +108,7 @@ const AddressPage = ({
             </h1>
             <h3
               className={classes.balance}
-              onClick={copyTextToClipboard.bind(this, balance)}>
+              onClick={copyTextToClipboard.bind(this, `${balance}`)}>
               Balance:{' '}
               <span className={classes.balanceText}>{balance / 1000000}</span>
             </h3>

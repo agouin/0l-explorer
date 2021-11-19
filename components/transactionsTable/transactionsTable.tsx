@@ -22,8 +22,16 @@ const TransactionColumns = [
     key: 'version',
     dataIndex: 'version',
     width: 100,
-    title: 'TX',
+    title: 'Height',
     render: (text) => <a href={`/tx/${text}`}>{text}</a>,
+  },
+  {
+    key: 'timestamp',
+    width: 170,
+    title: 'Timestamp',
+    dataIndex: 'timestamp',
+    render: (timestamp) => timestamp ? new Date(timestamp / 1000).toLocaleString() : ''
+    
   },
   {
     key: 'type',

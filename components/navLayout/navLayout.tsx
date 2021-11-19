@@ -35,7 +35,7 @@ const NavLayout = ({ children, hideFooter }: NavLayoutProps) => {
         <div className={classes.homeLink} onClick={goHome}>
         <span className={classes.title}>0L Explorer</span>
         </div>
-        <Search size="large" className={classes.search} placeholder="Enter an address or tx version" onSearch={handleSearch}></Search>
+        <Search size="large" className={classes.search} placeholder="Enter an address or tx height" onSearch={handleSearch}></Search>
       </div>
       <div className={classes.content}>
       {children}

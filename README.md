@@ -10,7 +10,7 @@ Install [docker](https://docs.docker.com/get-docker/) and [docker-compose](https
 
 ## Launch Dev Environment
 
-Set an active upstream node address in docker-compose.yml for `NODE_RPC_ADDRESS`
+Set an active upstream node hostname in docker-compose.yml for `NODE_HOSTNAME`
 
 Launch Application
 
@@ -45,7 +45,7 @@ docker build --no-cache -t 0l-explorer .
 Now distribute the `0lexplorer:latest` docker image to your desired container orchestration platform.
 An example kubernetes template file is provided in [0l-explorer.yml](0l-explorer.yml).
 
-Replace `$NODE_RPC_ADDRESS$` and `$CONTAINER_IMAGE$` in the template with valid values for the node to use for RPC calls, and the container repository URL, respectively.
+Replace `$NODE_HOSTNAME$` and `$CONTAINER_IMAGE$` in the template with valid values for the node to use for RPC calls, and the container repository URL, respectively.
 
 It can be deployed with:
 

@@ -8,11 +8,11 @@ import {
   MetadataResponse,
 } from '../types/0l'
 import { AxiosResponse } from 'axios'
-const { NODE_RPC_ADDRESS } = process.env
+const { NODE_HOSTNAME } = process.env
 
 export const NodeAPI = getTypescriptAPI(
   new API(
-    NODE_RPC_ADDRESS,
+    `http://${NODE_HOSTNAME}:8080`,
     { 'Content-Type': 'application/json' },
     { jsonrpc: '2.0' }
   )

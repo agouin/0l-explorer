@@ -40,8 +40,8 @@ const TransactionView = ({ transaction, top }: TransactionViewProps) => {
     case 'blockmetadata':
       info.push({
         key: 'timestamp_usecs',
-        title: 'Timestamp (usec)',
-        value: tx.timestamp_usecs,
+        title: 'Timestamp',
+        value: new Date(tx.timestamp_usecs / 1000).toLocaleString(),
       })
       break
     case 'user':
