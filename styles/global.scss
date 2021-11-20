@@ -67,3 +67,23 @@ a:hover {
 .ant-progress-text {
   color: white;
 }
+
+.ant-tabs {
+  color: white;
+}
+
+.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #2ab99a;
+}
+
+.ant-tabs-tab:hover {
+  color: #00806a;
+}
+
+.ant-tabs-tab .ant-tabs-tab-btn:focus {
+  color: #2ab99a;
+}
+
+.ant-tabs-ink-bar {
+  background: #2ab99a;
+}

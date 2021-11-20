@@ -208,7 +208,7 @@ export interface TransactionMin {
 export const getTransactionMin = (tx: Transaction): TransactionMin => {
   const script_function = get(tx, 'transaction.script.function_name')
   const status = get(tx, 'vm_status.type')
-  
+
   const { version, hash } = tx
   const sender = get(tx, 'transaction.sender') || null
   if (script_function === 'create_user_by_coin_tx') {
@@ -238,7 +238,8 @@ export const getTransactionMin = (tx: Transaction): TransactionMin => {
   let type: string = tx.transaction.type
   if (type === 'blockmetadata') {
     type = 'Block Metadata'
-    const timestamp = (tx.transaction as BlockMetadataTransaction).timestamp_usecs
+    const timestamp = (tx.transaction as BlockMetadataTransaction)
+      .timestamp_usecs
     return {
       type,
       timestamp,
@@ -257,6 +258,45 @@ export const getTransactionMin = (tx: Transaction): TransactionMin => {
   }
 }
 
+export interface ValidatorInfo {
+  account_address: string
+  pub_key: string
+  voting_power: number
+  full_node_ip: string
+  validator_ip: string
+  tower_height: number
+  tower_epoch: number
+  count_proofs_in_epoch: number
+  epochs_validating_and_mining: number
+  contiguous_epochs_validating_and_mining: number
+  epochs_since_last_account_creation: number
+  vote_count_in_epoch: number
+  prop_count_in_epoch: number
+  validator_config: {
+    operator_account: string
+    operator_has_balance: boolean
+  }
+  autopay: {
+    payments: {
+      uid: number
+      in_type: number
+      type_desc: string
+      payee: string
+      end_epoch: number
+      prev_balance: number
+    }[]
+    recurring_sum: number
+  }
+}
+
+export interface AutoPayPayments {
+  uid: number
+  in_type: number
+  type_desc: string
+  payee: string
+  end_epoch: number
+  prev_balance: number
+}
 export interface Vitals {
   items: {
     configs_exist: boolean
@@ -317,35 +357,6 @@ export interface Vitals {
         }
       }
     }
-    validator_view: {
-      account_address: string
-      pub_key: string
-      voting_power: number
-      full_node_ip: string
-      validator_ip: string
-      tower_height: number
-      tower_epoch: number
-      count_proofs_in_epoch: number
-      epochs_validating_and_mining: number
-      contiguous_epochs_validating_and_mining: number
-      epochs_since_last_account_creation: number
-      vote_count_in_epoch: number
-      prop_count_in_epoch: number
-      validator_config: {
-        operator_account: string
-        operator_has_balance: boolean
-      }
-      autopay: {
-        payments: {
-          uid: number
-          in_type: number
-          type_desc: string
-          payee: string
-          end_epoch: number
-          prev_balance: number
-        }[]
-        recurring_sum: number
-      }
-    }[]
+    validator_view: ValidatorInfo[]
   }
 }

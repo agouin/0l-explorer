@@ -1,0 +1,15 @@
+.tableContainer {
+  display: flex;
+  justify-content: center;
+}
+
+.inner {
+  padding: 16px;
+  flex: 0 1 1300px;
+}
+
+@media only screen and (max-width: 1046px) {
+  .tableContainer {
+    display: block;
+  }
+}
