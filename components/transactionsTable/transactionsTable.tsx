@@ -27,7 +27,7 @@ const TransactionColumns = [
   },
   {
     key: 'timestamp',
-    width: 170,
+    width: 180,
     title: 'Timestamp',
     dataIndex: 'timestamp',
     render: (timestamp) => timestamp ? new Date(timestamp / 1000).toLocaleString() : ''

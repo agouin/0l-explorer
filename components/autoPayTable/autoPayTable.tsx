@@ -17,7 +17,7 @@ const AutoPayColumns = [
     title: 'UID',
     dataIndex: 'uid',
     sorter: Sorter((record)=> record.uid),
-    width: 150,
+    width: 90,
   },
   {
     key: 'payee',
@@ -38,14 +38,14 @@ const AutoPayColumns = [
     title: 'End Epoch',
     dataIndex: 'end_epoch',
     sorter: Sorter((record)=> record.end_epoch),
-    width: 150,
+    width: 120,
   },
   {
     key: 'amount',
     title: 'Amount',
     dataIndex: 'amount',
     sorter: Sorter((record)=> parseInt(record.amount)),
-    width: 150,
+    width: 120,
   }
 ]
 

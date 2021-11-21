@@ -2,11 +2,13 @@ version: '3'
 services:
   0l:
     build: .
+    command: yarn nodemon server.js
     environment:
       - PORT=3027
       - NEXT_TELEMETRY_DISABLED=1
       - NODE_ENV=development
       - NODE_HOSTNAME=35.231.138.89
+      #- NODE_HOSTNAME=138.197.59.9
     ports:
       - "3027:3027"
     volumes:

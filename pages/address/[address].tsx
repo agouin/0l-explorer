@@ -16,6 +16,7 @@ import {
 import { get } from 'lodash'
 import TransactionsTable from '../../components/transactionsTable/transactionsTable'
 import { numberWithCommas } from '../../lib/utils'
+import NotFoundPage from '../404'
 
 const fallbackCopyTextToClipboard = (text) => {
   var textArea = document.createElement('textarea')
@@ -67,6 +68,8 @@ const AddressPage = ({
   transactions: TransactionMin[]
   errors: NodeRPCError[]
 }) => {
+  if (!account) return NotFoundPage()
+
   useEffect(() => {
     if (errors.length > 0) {
       console.error(errors)
@@ -86,7 +89,7 @@ const AddressPage = ({
             <h1
               className={classes.address}
               onClick={copyTextToClipboard.bind(this, account.address)}>
-              Address{' '}
+              Address:{' '}
               <span className={classes.addressText}>{account.address}</span>
             </h1>
             <h3
@@ -119,7 +122,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     getAccountTransactions({
       account: addressSingle,
       start: 0,
-      limit: 200,
+      limit: 1000,
       includeEvents: false,
     }),
   ])
@@ -128,7 +131,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   if (accountsRes.error) errors.push(accountsRes.error)
   if (transactionsRes.error) errors.push(transactionsRes.error)
 
-  const account: Account = accountsStatus === 200 ? accountsRes.result : null
+  if (errors.length > 0) {
+    console.log({errors})
+    ctx.res.statusCode = 404
+  }
+
+  const account: Account = accountsRes.result || null
   const transactions: TransactionMin[] =
     transactionsStatus === 200 && !transactionsRes.error
       ? transactionsRes.result

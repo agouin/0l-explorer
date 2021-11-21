@@ -2,7 +2,7 @@
 
 Explore 0L addresses and transactions
 
-React webapp using next.js
+React webapp using [next.js](https://nextjs.org/)
 
 ## Setup
 
@@ -20,9 +20,9 @@ docker-compose up
 
 Now browse to [http://localhost:3027](http://localhost:3027) in your browser
 
-- Frontend files have hot reload.
+- Frontend files have hot reload. You should see changes without needing to refresh the browser, unless it is a change to getServerSideProps (the server side render) or requires a specific sequence of events to set the proper state.
 
-- If changes are made to server-side files, re-launch docker container
+- If changes are made to server-side files, the app will restart.
 
 ```bash
 docker-compose down

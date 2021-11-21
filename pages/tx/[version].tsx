@@ -8,6 +8,7 @@ import {
 } from '../../lib/types/0l'
 import { get } from 'lodash'
 import TransactionView from '../../components/transactionView/transactionView'
+import NotFoundPage from '../404'
 
 const fallbackCopyTextToClipboard = (text) => {
   var textArea = document.createElement('textarea')
@@ -55,10 +56,10 @@ const AddressPage = ({
 }: {
   transaction: Transaction
 }) => {
+  if (!transaction) return NotFoundPage()
   const hash = get(transaction, 'version')
   return (
     <NavLayout>
-      
       <TransactionView transaction={transaction} top={<h1 className={classes.address} onClick={copyTextToClipboard.bind(this, hash)}>Transaction <span className={classes.addressText}>{hash}</span></h1>}/>
     </NavLayout>
   )
@@ -73,11 +74,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       limit: 1,
       includeEvents: true
     })
-
-  console.log({
-    transactionRes,
-    transactionStatus,
-  })
 
   return {
     props: {

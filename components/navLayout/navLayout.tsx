@@ -5,45 +5,72 @@ import Search from 'antd/lib/input/Search'
 import { Spin } from 'antd'
 
 interface NavLayoutProps {
-  children: ReactNode | undefined 
+  children: ReactNode | undefined
   hideFooter?: boolean
 }
 
 const NavLayout = ({ children, hideFooter }: NavLayoutProps) => {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const handleSearch = async search => {
-    console.log(search.length)
+
+  const go = (route) => {
     setLoading(true)
-    if (search.length === 32) {
-      window.location.href = `/address/${search}`
+    window.location.href = route
+  }
+
+  const handleSearch = async (search) => {
+    console.log(search.length)
+
+    if (search.length === 64) {
+      go(`/address/${search.substring(32)}`)
+    } else if (search.length === 32) {
+      go(`/address/${search}`)
     } else {
       const version = parseInt(search)
       if (!isNaN(version)) {
-        window.location.href = `/tx/${search}`
+        go(`/tx/${search}`)
       }
     }
   }
+
   const goHome = async () => {
     setLoading(true)
     await router.push(`/`)
     setLoading(false)
   }
-  return <div className={classes.full}>
-    <div>
-      <div className={classes.navBarContainer}>
-        <div className={classes.homeLink} onClick={goHome}>
-        <span className={classes.title}>0L Explorer</span>
+
+  return (
+    <div className={classes.full}>
+      <div>
+        <div className={classes.navBarContainer}>
+          <div className={classes.homeLink} onClick={goHome}>
+            <span className={classes.title}>0L Explorer</span>
+          </div>
+          <Search
+            size="large"
+            className={classes.search}
+            placeholder="Enter an address, auth key, or tx height"
+            onSearch={handleSearch}></Search>
         </div>
-        <Search size="large" className={classes.search} placeholder="Enter an address or tx height" onSearch={handleSearch}></Search>
+        <div className={classes.content}>
+          {children}
+          {loading && (
+            <div className={classes.spinContainer}>
+              <Spin />
+            </div>
+          )}
+        </div>
       </div>
-      <div className={classes.content}>
-      {children}
-      {loading && <div className={classes.spinContainer}><Spin /></div>}
-      </div>
+      {!hideFooter && (
+        <footer className={classes.footer}>
+          <span className={classes.footerText}>
+            If you would like to contribute to this project financially, please{' '}
+            <a href="/donate"> donate</a>
+          </span>
+        </footer>
+      )}
     </div>
-    {!hideFooter && <footer className={classes.footer}><span className={classes.footerText}>If you would like to contribute to this project financially, please <a href="/donate"> donate</a></span></footer>}
-  </div>
+  )
 }
 
 export default NavLayout

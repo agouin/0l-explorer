@@ -84,9 +84,13 @@ const IndexPage = ({
     transactions.length > 0 ? transactions[0].version : 0
   )
 
+  const handleTabChange = (newTab) => {
+    window.history.pushState({}, null, `/?tab=${newTab}${latest ? '' : `&start=${startVersion}`}`)
+  }
+
   return (
     <NavLayout>
-      <Tabs defaultActiveKey={initialTab} centered>
+      <Tabs defaultActiveKey={initialTab} centered onChange={handleTabChange}>
         <TabPane key="dashboard" tab="Dashboard">
           <TransactionsTable
             transactions={transactions}
