@@ -1,4 +1,4 @@
-export const hasInvite = epochs_since_last_account_creation => epochs_since_last_account_creation > 7
+export const hasInvite = epochs_since_last_account_creation => epochs_since_last_account_creation >= 14
 
 export const numberWithCommas = (x) => x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")
 

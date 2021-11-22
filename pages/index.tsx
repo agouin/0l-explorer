@@ -34,7 +34,6 @@ const IndexPage = ({
   vitals,
   initialTab,
 }: IndexPageProps) => {
-  console.log({ vitals })
   const handleGoToVersion = (search: string) => {
     if (!search) {
       window.location.href = '/'
@@ -200,7 +199,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     try {
       const sse = new EventSource(uri)
       sse.onmessage = (msg) => {
-        console.log({ msg })
         sse.close()
         res(JSON.parse(msg.data))
       }
@@ -221,8 +219,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const {
     result: { version },
   } = metadataRes
-
-  console.log({ vitals })
 
   if (startVersion === undefined || isNaN(startVersion)) {
     startVersion = version - TX_PER_PAGE + 10

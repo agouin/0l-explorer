@@ -6,6 +6,7 @@ import {
   CurrenciesResponse,
   TransactionResponse,
   MetadataResponse,
+  TowerStateResponse
 } from '../types/0l'
 import { AxiosResponse } from 'axios'
 const { NODE_HOSTNAME } = process.env
@@ -71,5 +72,9 @@ export const getEvents = (body: {
 }) => CallRPC('get_events', [body.key, body.start, body.limit])
 export const getCurrencies = (): Promise<AxiosResponse<CurrenciesResponse>> =>
   CallRPC('get_currencies', [])
+
+export const getTowerState = (body: {
+  account: string
+}): Promise<AxiosResponse<TowerStateResponse>> => CallRPC('get_tower_state_view', [body.account])
 
 export default CallRPC

@@ -16,3 +16,35 @@
     font-weight: 100;
   }
 }
+
+.infoRow {
+  display: flex;
+}
+
+.infoText {
+  margin-right: 8px;
+  font-size: 14pt;
+  display: block;
+}
+
+.thinText {
+  font-weight: 200;
+}
+
+.outerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-content: center;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.title {
+  color: white;
+  font-size: 20pt;
+  margin-right: 16px;
+}

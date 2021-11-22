@@ -194,6 +194,20 @@ export interface MetadataResponse extends NodeRPCResponse {
   result: Metadata
 }
 
+export interface TowerState {
+  previous_proof_hash: string
+  verified_tower_height: number
+  latest_epoch_mining: number
+  count_proofs_in_epoch: number
+  epochs_validating_and_mining: number
+  contiguous_epochs_validating_and_mining: number
+  epochs_since_last_account_creation: number
+}
+
+export interface TowerStateResponse extends NodeRPCResponse {
+  result: TowerState
+}
+
 export interface TransactionMin {
   type: string
   hash: string
