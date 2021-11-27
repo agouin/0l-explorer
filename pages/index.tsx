@@ -84,7 +84,11 @@ const IndexPage = ({
   )
 
   const handleTabChange = (newTab) => {
-    window.history.pushState({}, null, `/?tab=${newTab}${latest ? '' : `&start=${startVersion}`}`)
+    window.history.pushState(
+      {},
+      null,
+      `/?tab=${newTab}${latest ? '' : `&start=${startVersion}`}`
+    )
   }
 
   return (
@@ -176,7 +180,10 @@ const IndexPage = ({
           />
         </TabPane>
         <TabPane key="autoPay" tab="Auto Pay">
-          <AutoPayTable autoPayInfo={vitals.account_view.autopay.payments} />
+          <AutoPayTable
+            autoPayInfo={vitals.account_view.autopay.payments}
+            validators={vitals.chain_view.validator_view}
+          />
         </TabPane>
       </Tabs>
     </NavLayout>
@@ -194,7 +201,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     startVersion = parseInt(query.start as string)
   }
 
-  const getVitals = new Promise((res, rej) => {
+  const getVitals: Promise<Vitals> = new Promise((res, rej) => {
     const uri = `http://${NODE_HOSTNAME}:3030/vitals`
     try {
       const sse = new EventSource(uri)

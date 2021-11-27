@@ -6,12 +6,14 @@
 
 .addressText {
   font-weight: 100;
+  overflow-wrap: break-word;
 }
 
 .onboardedBy {
   font-size: 14pt;
   color: white;
   font-weight: 400;
+  overflow-wrap: break-word;
 }
 
 .balance {
