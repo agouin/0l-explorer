@@ -6,17 +6,16 @@ import {
   CurrenciesResponse,
   TransactionResponse,
   MetadataResponse,
-  TowerStateResponse
+  TowerStateResponse,
+  EventsResponse,
 } from '../types/0l'
 import { AxiosResponse } from 'axios'
 const { NODE_HOSTNAME } = process.env
 
 export const NodeAPI = getTypescriptAPI(
-  new API(
-    `http://${NODE_HOSTNAME}:8080`,
-    { 'Content-Type': 'application/json' },
-    { jsonrpc: '2.0' }
-  )
+  new API(`http://${NODE_HOSTNAME}:8080`, {
+    'Content-Type': 'application/json',
+  })
 )
 
 const CallRPC = (method: string, params: any[]) =>
@@ -63,18 +62,22 @@ export const getAccountTransactions = (body: {
     body.limit,
     body.includeEvents,
   ])
-export const getMetadata = (body: { version?: number }): Promise<AxiosResponse<MetadataResponse>> =>
+export const getMetadata = (body: {
+  version?: number
+}): Promise<AxiosResponse<MetadataResponse>> =>
   CallRPC('get_metadata', body.version === undefined ? [] : [body.version])
 export const getEvents = (body: {
   key: string
   start: number
   limit: number
-}) => CallRPC('get_events', [body.key, body.start, body.limit])
+}): Promise<AxiosResponse<EventsResponse>> =>
+  CallRPC('get_events', [body.key, body.start, body.limit])
 export const getCurrencies = (): Promise<AxiosResponse<CurrenciesResponse>> =>
   CallRPC('get_currencies', [])
 
 export const getTowerState = (body: {
   account: string
-}): Promise<AxiosResponse<TowerStateResponse>> => CallRPC('get_tower_state_view', [body.account])
+}): Promise<AxiosResponse<TowerStateResponse>> =>
+  CallRPC('get_tower_state_view', [body.account])
 
 export default CallRPC

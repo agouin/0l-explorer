@@ -9,6 +9,17 @@ export interface Amount {
 export interface Account {
   address: string
   balances: Amount[]
+  sequence_number: number
+  authentication_key: string
+  sent_events_key: string
+  received_events_key: string
+  delegated_key_rotation_capability: boolean
+  delegated_withdrawal_capability: boolean
+  is_frozen: boolean
+  role: {
+    type: string
+  }
+  version: number
 }
 
 export interface NodeRPCError {
@@ -28,17 +39,6 @@ export interface NodeRPCResponse {
 
 export interface AccountResponse extends NodeRPCResponse {
   result: Account
-  sequence_number: number
-  authentication_key: string
-  sent_events_key: string
-  received_events_key: string
-  delegated_key_rotation_capability: boolean
-  delegated_withdrawal_capability: boolean
-  is_frozen: boolean
-  role: {
-    type: string
-  }
-  version: number
 }
 
 export interface Script {
@@ -94,6 +94,9 @@ export interface PeerToPeerWithMetadata extends Script {
 export interface EventData {
   type: string
   amount: Amount
+  sender?: string
+  receiver?: string
+  metadata?: string
   preburn_address?: string
 }
 
@@ -102,6 +105,10 @@ export interface Event {
   sequence_number: number
   transaction_version: number
   data: EventData
+}
+
+export interface EventsResponse extends NodeRPCResponse {
+  result: Event[]
 }
 
 export interface VMStatus {
