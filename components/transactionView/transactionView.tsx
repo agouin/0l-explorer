@@ -7,9 +7,14 @@ import classes from './transactionView.module.scss'
 interface TransactionViewProps {
   transaction: Transaction
   top?: ReactNode | undefined
+  bottom?: ReactNode | undefined
 }
 
-const TransactionView = ({ transaction, top }: TransactionViewProps) => {
+const TransactionView = ({
+  transaction,
+  top,
+  bottom,
+}: TransactionViewProps) => {
   if (!transaction) return null
   const {
     transaction: tx,
@@ -115,6 +120,7 @@ const TransactionView = ({ transaction, top }: TransactionViewProps) => {
           ]}
           dataSource={info}
         />
+        {bottom}
       </div>
     </div>
   )

@@ -19,16 +19,16 @@ const NavLayout = ({ children, hideFooter }: NavLayoutProps) => {
   }
 
   const handleSearch = async (search) => {
-    console.log(search.length)
+    const normalizedSearch = search.trim()
 
-    if (search.length === 64) {
-      go(`/address/${search.substring(32)}`)
-    } else if (search.length === 32) {
-      go(`/address/${search}`)
+    if (normalizedSearch.length === 64) {
+      go(`/address/${normalizedSearch.substring(32)}`)
+    } else if (normalizedSearch.length === 32) {
+      go(`/address/${normalizedSearch}`)
     } else {
-      const version = parseInt(search)
+      const version = parseInt(normalizedSearch)
       if (!isNaN(version)) {
-        go(`/tx/${search}`)
+        go(`/block/${normalizedSearch}`)
       }
     }
   }
@@ -49,7 +49,7 @@ const NavLayout = ({ children, hideFooter }: NavLayoutProps) => {
           <Search
             size="large"
             className={classes.search}
-            placeholder="Enter an address, auth key, or tx height"
+            placeholder="Enter an address, auth key, or block height"
             onSearch={handleSearch}></Search>
         </div>
         <div className={classes.content}>

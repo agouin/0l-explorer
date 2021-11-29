@@ -76,7 +76,7 @@ const ValidatorColumns = [
     key: 'donations',
     title: 'Auto Pay Donation',
     dataIndex: 'donation_percent',
-    sorter: Sorter((record) => record.donation_percent),
+    sorter: Sorter((record: ValidatorInfo) => record.autopay.recurring_sum),
     width: 120,
     render: (_, record: ValidatorInfo) =>
       record.autopay.recurring_sum / 100 + '%',

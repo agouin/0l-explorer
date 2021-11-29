@@ -3,12 +3,11 @@ import { GetServerSideProps } from 'next'
 import classes from './version.module.scss'
 import { getTransactions } from '../../lib/api/node'
 import NavLayout from '../../components/navLayout/navLayout'
-import {
-  Transaction,
-} from '../../lib/types/0l'
+import { Transaction } from '../../lib/types/0l'
 import { get } from 'lodash'
 import TransactionView from '../../components/transactionView/transactionView'
 import NotFoundPage from '../404'
+import EventsTable from '../../components/eventsTable/eventsTable'
 
 const fallbackCopyTextToClipboard = (text) => {
   var textArea = document.createElement('textarea')
@@ -51,16 +50,30 @@ const copyTextToClipboard = async (text) => {
   }
 }
 
-const AddressPage = ({
-  transaction,
-}: {
-  transaction: Transaction
-}) => {
+const TransactionPage = ({ transaction }: { transaction: Transaction }) => {
   if (!transaction) return NotFoundPage()
   const hash = get(transaction, 'version')
   return (
     <NavLayout>
-      <TransactionView transaction={transaction} top={<h1 className={classes.address} onClick={copyTextToClipboard.bind(this, hash)}>Transaction <span className={classes.addressText}>{hash}</span></h1>}/>
+      <TransactionView
+        transaction={transaction}
+        top={
+          <h1
+            className={classes.address}
+            onClick={copyTextToClipboard.bind(this, hash)}>
+            Block <span className={classes.addressText}>{hash}</span>
+          </h1>
+        }
+        bottom={
+          transaction.events &&
+          transaction.events.length > 0 && (
+            <EventsTable
+              top={<h1 className={classes.address}>Events</h1>}
+              events={transaction.events}
+            />
+          )
+        }
+      />
     </NavLayout>
   )
 }
@@ -69,11 +82,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { version } = ctx.params
   console.log('Fetching tx', version)
   const versionSingle = Array.isArray(version) ? version[0] : version
-  const { data: transactionRes, status: transactionStatus } = await getTransactions({
-      startVersion: parseInt(versionSingle),
-      limit: 1,
-      includeEvents: true
-    })
+  const {
+    data: transactionRes,
+    status: transactionStatus,
+  } = await getTransactions({
+    startVersion: parseInt(versionSingle),
+    limit: 1,
+    includeEvents: true,
+  })
 
   return {
     props: {
@@ -82,4 +98,4 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 }
 
-export default AddressPage
+export default TransactionPage

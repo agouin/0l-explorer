@@ -1,4 +1,4 @@
-import { Table } from 'antd'
+import { Table, TablePaginationConfig } from 'antd'
 import { TransactionMin } from '../../lib/types/0l'
 import { capitalCase } from 'change-case'
 import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons'
@@ -9,6 +9,7 @@ interface TransactionTableProps {
   transactions: TransactionMin[]
   top?: ReactNode | undefined
   bottom?: ReactNode | undefined
+  pagination: TablePaginationConfig | false
 }
 
 const getStateIcon = (status) => {
@@ -23,15 +24,15 @@ const TransactionColumns = [
     dataIndex: 'version',
     width: 100,
     title: 'Height',
-    render: (text) => <a href={`/tx/${text}`}>{text}</a>,
+    render: (text) => <a href={`/block/${text}`}>{text}</a>,
   },
   {
     key: 'timestamp',
     width: 180,
     title: 'Timestamp',
     dataIndex: 'timestamp',
-    render: (timestamp) => timestamp ? new Date(timestamp / 1000).toLocaleString() : ''
-    
+    render: (timestamp) =>
+      timestamp ? new Date(timestamp / 1000).toLocaleString() : '',
   },
   {
     key: 'type',
@@ -69,6 +70,7 @@ const TransactionColumns = [
 
 const TransactionsTable = ({
   transactions,
+  pagination,
   top,
   bottom,
 }: TransactionTableProps) => {
@@ -77,10 +79,11 @@ const TransactionsTable = ({
       <div className={classes.inner}>
         {top}
         <Table
+          rowKey="version"
           scroll={{ x: true }}
           columns={TransactionColumns}
           dataSource={transactions}
-          pagination={false}
+          pagination={pagination}
         />
         {bottom}
       </div>

@@ -1,6 +1,13 @@
-export const hasInvite = epochs_since_last_account_creation => epochs_since_last_account_creation >= 14
+import { Vitals } from './types/0l'
+import EventSource from 'eventsource'
 
-export const numberWithCommas = (x) => x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",")
+const { NODE_HOSTNAME } = process.env
+
+export const hasInvite = (epochs_since_last_account_creation) =>
+  epochs_since_last_account_creation >= 14
+
+export const numberWithCommas = (x) =>
+  x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ',')
 
 export const Sorter = (getField) => (a, b) => {
   const fieldA = getField(a)
@@ -31,3 +38,20 @@ export const timeDifference = (current, previous) => {
     return Math.round(elapsed / msPerMonth) + ' months ago'
   return Math.round(elapsed / msPerYear) + ' years ago'
 }
+
+export const getVitals = (): Promise<Vitals> => new Promise((res, rej) => {
+  const uri = `http://${NODE_HOSTNAME}:3030/vitals`
+  try {
+    const sse = new EventSource(uri)
+    sse.onmessage = (msg) => {
+      sse.close()
+      res(JSON.parse(msg.data))
+    }
+    sse.onerror = (err) => {
+      sse.close()
+      rej(err)
+    }
+  } catch (err) {
+    rej(err)
+  }
+})

@@ -44,7 +44,7 @@ export interface AccountResponse extends NodeRPCResponse {
 export interface Script {
   type: string
   code: string
-  arguments: string[]
+  arguments_bcs: string[]
   type_arguments: string[]
 }
 
@@ -380,4 +380,33 @@ export interface Vitals {
     }
     validator_view: ValidatorInfo[]
   }
+}
+
+export interface StatsResponse {
+  allAccountCount: number // All accounts
+  allMinerCount: number // All accounts with tower height > 0
+  activeMinerCount: number // All accounts that have submitted proofs in current epoch
+}
+
+export interface PermissionNodeValidator {
+  address: string // Address of this validator
+  parent: string // Address of validator that onboarded this validator
+  version_onboarded: number // Height when validator was onboarded
+}
+
+export interface ValidatorPermissionTreeResponse
+  extends PermissionNodeValidator {
+  children: PermissionNodeValidator[]
+}
+
+export interface PermissionNodeMiner {
+  address: string // Address of this validator
+  parent: string // Address of validator that onboarded this validator
+  version_onboarded: number // Height when validator was onboarded
+  has_tower: boolean // Does miner have tower height > 0 ?
+  is_active: boolean // Has miner submitted proofs in current epoch?
+}
+
+export interface MinerPermissionTreeResponse extends PermissionNodeMiner {
+  children: PermissionNodeMiner[]
 }
