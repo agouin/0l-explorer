@@ -10,4 +10,4 @@ RUN yarn
 
 RUN yarn next build
 
-CMD [ "node", "index.js" ]
+CMD [ "yarn", "start" ]

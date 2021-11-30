@@ -1,11 +1,9 @@
 import { Table, Tooltip } from 'antd'
-import { AutoPayPayments, ValidatorInfo } from '../../lib/types/0l'
+import { ValidatorInfo } from '../../lib/types/0l'
 import classes from './autoPayTable.module.scss'
 import { ReactNode } from 'react'
-import { Sorter } from '../../lib/utils'
 
 interface AutoPayTableProps {
-  autoPayInfo: AutoPayPayments[]
   validators: ValidatorInfo[]
   top?: ReactNode | undefined
   bottom?: ReactNode | undefined
@@ -55,7 +53,6 @@ interface AddressRecord {
 }
 
 const AutoPayTable = ({
-  autoPayInfo,
   validators,
   top,
   bottom,
@@ -78,7 +75,7 @@ const AutoPayTable = ({
     },
     {
       key: 'validators',
-      title: 'Participating Validators',
+      title: <Tooltip title="Validators donating to this community wallet with auto pay">Participating Validators</Tooltip>,
       width: 120,
       render: (_, { address }: AddressRecord) => {
         const participatingValidators = []

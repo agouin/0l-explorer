@@ -67,6 +67,13 @@
 .topStatsInner {
   display: flex;
  flex-direction: column;
+ background-color: #003f34;
+ padding: 16px;
+ border-radius: 4px;
+}
+
+.downloadProofsButton {
+  margin-top: 16px;
 }
 
 @media only screen and (max-width: 991px) {

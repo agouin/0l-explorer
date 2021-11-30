@@ -1,4 +1,4 @@
-import { message, Tooltip, Row, Col } from 'antd'
+import { message, Tooltip, Row, Col, Button } from 'antd'
 import { GetServerSideProps } from 'next'
 import { useEffect } from 'react'
 import classes from './address.module.scss'
@@ -21,18 +21,13 @@ import {
   TowerStateResponse,
   TowerState,
   EventsResponse,
-  ValidatorPermissionTreeResponse,
-  MinerPermissionTreeResponse,
   Event,
 } from '../../lib/types/0l'
 import { get } from 'lodash'
 import TransactionsTable from '../../components/transactionsTable/transactionsTable'
 import { numberWithCommas } from '../../lib/utils'
 import NotFoundPage from '../404'
-import {
-  getValidatorPermissionTree,
-  getMinerPermissionTree,
-} from '../../lib/api/permissionTree'
+
 import EventsTable from '../../components/eventsTable/eventsTable'
 
 const fallbackCopyTextToClipboard = (text) => {
@@ -81,6 +76,7 @@ interface AddressPageProps {
   transactions: TransactionMin[]
   events: Event[]
   onboardedBy: string
+  operatorAccount: string
   validatorAccountCreatedBy: string
   towerState: TowerState
   errors: NodeRPCError[]
@@ -91,6 +87,7 @@ const AddressPage = ({
   transactions,
   events,
   onboardedBy,
+  operatorAccount,
   validatorAccountCreatedBy,
   towerState,
   errors,
@@ -151,6 +148,20 @@ const AddressPage = ({
               )}
             </h1>
           )}
+          {operatorAccount && (
+            <h1 className={classes.onboardedBy}>
+              Operator Account:{' '}
+              {operatorAccount === '00000000000000000000000000000000' ? (
+                <span className={classes.addressText}>Genesis</span>
+              ) : (
+                <a href={`/address/${operatorAccount}`}>
+                  <span className={classes.addressText}>
+                    {operatorAccount}
+                  </span>
+                </a>
+              )}
+            </h1>
+          )}
           {towerState && (
             <>
               <div className={classes.infoRow}>
@@ -204,6 +215,9 @@ const AddressPage = ({
                     </span>
                   </span>
                 </Tooltip>
+              </div>
+              <div className={classes.infoRow}>
+                <a href={`/proofs/${account.address}`} target="_blank"><Button className={classes.downloadProofsButton} type="primary">Download Proofs</Button></a>
               </div>
             </>
           )}
@@ -323,7 +337,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   )
 
   let onboardedBy = null,
-    validatorAccountCreatedBy = null
+    validatorAccountCreatedBy = null,
+    operatorAccount = null
 
   for (const transaction of nonZeroEventTransactionsRes) {
     const sender = get(transaction, 'data.result[0].transaction.sender')
@@ -331,11 +346,32 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       transaction,
       'data.result[0].transaction.script.function_name'
     )
-    if (functionName === 'create_acc_val') validatorAccountCreatedBy = sender
+    if (functionName === 'create_acc_val') {
+      const events = get(transaction, 'data.result[0].events')
+      if (events && events.length > 0) {
+        const operatorCreateEvent = events.find(event => get(event, 'data.type') === 'receivedpayment' && get(event, 'data.receiver') !== addressSingle.toLowerCase())
+        if (operatorCreateEvent) {
+          operatorAccount = get(operatorCreateEvent, 'data.receiver')
+        }
+      }
+      validatorAccountCreatedBy = sender
+    }
     else if (functionName === 'create_user_by_coin_tx') onboardedBy = sender
   }
 
-  if (!onboardedBy && !validatorAccountCreatedBy) onboardedBy = 'Genesis'
+  if (!onboardedBy && !validatorAccountCreatedBy) {
+    onboardedBy = 'Genesis'
+    const genesisBlock = await getTransactions({
+      startVersion: 0,
+      limit: 1,
+      includeEvents: true,
+    })
+    const genesisEvents = get(genesisBlock, 'data.result[0].events')
+    if (genesisEvents) {
+      const operatorCreateEvent = genesisEvents.find(event => get(event, 'data.sender') === addressSingle.toLowerCase())
+      if (operatorCreateEvent) operatorAccount = get(operatorCreateEvent, 'data.receiver')
+    }
+  }
 
   if (!accountsRes.result) ctx.res.statusCode = 404
 
@@ -369,8 +405,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         .sort((a, b) => b.version - a.version)
         .map((tx) => getTransactionMin(tx))
     )
-    eventsCount = nextSetOfTransactionsRes.data.result.length
-    startTx += eventsCount
+    transactionsCount = nextSetOfTransactionsRes.data.result.length
+    startTx += transactionsCount
   }
 
   const account: Account = accountsRes.result || null
@@ -381,6 +417,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       account,
       transactions,
       onboardedBy,
+      operatorAccount,
       validatorAccountCreatedBy,
       events,
       towerState,

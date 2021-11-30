@@ -241,9 +241,8 @@ const IndexPage = ({
             validators={vitals.chain_view.validator_view}
           />
         </TabPane>
-        <TabPane key="autoPay" tab="Auto Pay">
+        <TabPane key="autoPay" tab="Community Wallets">
           <AutoPayTable
-            autoPayInfo={vitals.account_view.autopay.payments}
             validators={vitals.chain_view.validator_view}
           />
         </TabPane>

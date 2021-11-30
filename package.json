@@ -13,6 +13,7 @@
     "@koa/router": "^10.1.1",
     "@types/react": "^17.0.34",
     "antd": "^4.16.13",
+    "archiver": "^5.3.0",
     "axios": "^0.24.0",
     "change-case": "^4.1.2",
     "eventsource": "^1.1.0",
@@ -28,9 +29,6 @@
     "typescript": "^4.4.4"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "node index.js"
   }
 }
