@@ -11,11 +11,19 @@
 
 .homeLink {
   cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.icon {
+  width: 35px;
+  margin-right: 8px;
 }
 
 .title {
   color: white;
   font-size: 20pt;
+  margin-bottom: 0px;
 }
 
 .search {
