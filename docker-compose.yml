@@ -9,6 +9,7 @@ services:
       - NODE_ENV=development
       - NODE_HOSTNAME=35.231.138.89
       - PERMISSION_TREE_API_URL=https://0l.interblockcha.in:444
+      - GA_MEASUREMENT_ID=G-Z8SZTHYB62
     ports:
       - "3027:3027"
     volumes:
@@ -21,4 +22,5 @@ services:
       - ./index.js:/code/index.js
       - ./next-env.d.ts:/code/next-env.d.ts
       - ./tsconfig.json:/code/tsconfig.json
+      - ./next.config.js:/code/next.config.js
       - ./package.json:/code/package.json

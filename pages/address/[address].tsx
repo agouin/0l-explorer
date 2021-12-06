@@ -29,6 +29,7 @@ import { numberWithCommas } from '../../lib/utils'
 import NotFoundPage from '../404'
 
 import EventsTable from '../../components/eventsTable/eventsTable'
+import { pageview, event } from '../../lib/gtag'
 
 const fallbackCopyTextToClipboard = (text) => {
   var textArea = document.createElement('textarea')
@@ -95,6 +96,7 @@ const AddressPage = ({
   if (!account) return NotFoundPage()
 
   useEffect(() => {
+    pageview('/address', 'address')
     if (errors.length > 0) {
       console.error(errors)
       for (const error of errors) {
@@ -102,6 +104,15 @@ const AddressPage = ({
       }
     }
   }, [])
+
+  const trackDownloadProofs = () => {
+    event({
+      category: 'addressPage',
+      action: 'downloadProofs',
+      label: account.address,
+      value: null
+    })
+  }
 
   const balance = (get(account, 'balances[0].amount') || 0) / 1000000
   return (
@@ -155,9 +166,7 @@ const AddressPage = ({
                 <span className={classes.addressText}>Genesis</span>
               ) : (
                 <a href={`/address/${operatorAccount}`}>
-                  <span className={classes.addressText}>
-                    {operatorAccount}
-                  </span>
+                  <span className={classes.addressText}>{operatorAccount}</span>
                 </a>
               )}
             </h1>
@@ -217,7 +226,14 @@ const AddressPage = ({
                 </Tooltip>
               </div>
               <div className={classes.infoRow}>
-                <a href={`/proofs/${account.address}`} target="_blank"><Button className={classes.downloadProofsButton} type="primary">Download Proofs</Button></a>
+                <a href={`/proofs/${account.address}`} target="_blank">
+                  <Button
+                    className={classes.downloadProofsButton}
+                    type="primary"
+                    onClick={trackDownloadProofs}>
+                    Download Proofs
+                  </Button>
+                </a>
               </div>
             </>
           )}
@@ -349,14 +365,17 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     if (functionName === 'create_acc_val') {
       const events = get(transaction, 'data.result[0].events')
       if (events && events.length > 0) {
-        const operatorCreateEvent = events.find(event => get(event, 'data.type') === 'receivedpayment' && get(event, 'data.receiver') !== addressSingle.toLowerCase())
+        const operatorCreateEvent = events.find(
+          (event) =>
+            get(event, 'data.type') === 'receivedpayment' &&
+            get(event, 'data.receiver') !== addressSingle.toLowerCase()
+        )
         if (operatorCreateEvent) {
           operatorAccount = get(operatorCreateEvent, 'data.receiver')
         }
       }
       validatorAccountCreatedBy = sender
-    }
-    else if (functionName === 'create_user_by_coin_tx') onboardedBy = sender
+    } else if (functionName === 'create_user_by_coin_tx') onboardedBy = sender
   }
 
   if (!onboardedBy && !validatorAccountCreatedBy) {
@@ -368,8 +387,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     })
     const genesisEvents = get(genesisBlock, 'data.result[0].events')
     if (genesisEvents) {
-      const operatorCreateEvent = genesisEvents.find(event => get(event, 'data.sender') === addressSingle.toLowerCase())
-      if (operatorCreateEvent) operatorAccount = get(operatorCreateEvent, 'data.receiver')
+      const operatorCreateEvent = genesisEvents.find(
+        (event) => get(event, 'data.sender') === addressSingle.toLowerCase()
+      )
+      if (operatorCreateEvent)
+        operatorAccount = get(operatorCreateEvent, 'data.receiver')
     }
   }
 

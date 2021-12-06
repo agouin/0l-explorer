@@ -1,7 +1,5 @@
 import { Table } from 'antd'
 import { Event } from '../../lib/types/0l'
-import { capitalCase } from 'change-case'
-import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons'
 import classes from './eventsTable.module.scss'
 import { ReactNode } from 'react'
 import { get } from 'lodash'
@@ -76,7 +74,7 @@ const EventsTable = ({ events, top, bottom }: EventsTableProps) => (
     <div className={classes.inner}>
       {top}
       <Table
-        rowKey="version"
+        rowKey={(row) => `${row.transaction_version}_${row.type}_${row.sender}_${row.recipient}_${row.amount}`}
         scroll={{ x: true }}
         columns={EventColumns}
         dataSource={events}

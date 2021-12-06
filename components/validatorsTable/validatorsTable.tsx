@@ -101,6 +101,7 @@ const ValidatorsTable = ({ validators, top, bottom }: ValidatorsTableProps) => (
     <div className={classes.inner}>
       {top}
       <Table
+        rowKey="account_address"
         scroll={{ x: true }}
         columns={ValidatorColumns}
         dataSource={validators}

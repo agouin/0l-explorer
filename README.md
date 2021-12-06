@@ -45,7 +45,7 @@ docker build --no-cache -t 0l-explorer .
 Now distribute the `0lexplorer:latest` docker image to your desired container orchestration platform.
 An example kubernetes template file is provided in [0l-explorer.yml](0l-explorer.yml).
 
-Replace `$NODE_HOSTNAME$` and `$CONTAINER_IMAGE$` in the template with valid values for the node to use for RPC calls, and the container repository URL, respectively.
+Replace `$NODE_HOSTNAME$`, `$CONTAINER_IMAGE$`, `$PERMISSION_TREE_API_URL$` and `$GA_MEASUREMENT_ID$` in the template with valid values for the node to use for RPC calls, the container repository URL, the permission tree API host, and Google Analytics Measurement ID, respectively.
 
 It can be deployed with:
 

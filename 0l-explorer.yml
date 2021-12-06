@@ -34,6 +34,10 @@ spec:
           value: "3027"
         - name: NODE_HOSTNAME
           value: $NODE_HOSTNAME$
+        - name: PERMISSION_TREE_API_URL
+          value: $PERMISSION_TREE_API_URL$
+        - name: GA_MEASUREMENT_ID
+          value: $GA_MEASUREMENT_ID$
         image: $CONTAINER_IMAGE$
         ports:
         - containerPort: 3027

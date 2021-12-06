@@ -18,6 +18,8 @@ import { hasInvite, numberWithCommas, getVitals } from '../lib/utils'
 import AutoPayTable from '../components/autoPayTable/autoPayTable'
 import { getStats } from '../lib/api/permissionTree'
 import EventsTable from '../components/eventsTable/eventsTable'
+import { useEffect } from 'react'
+import { pageview } from '../lib/gtag'
 
 const { TabPane } = Tabs
 
@@ -45,6 +47,11 @@ const IndexPage = ({
   initialTab,
   stats,
 }: IndexPageProps) => {
+  useEffect(() => {
+    const page = `/?tab=${initialTab}${latest ? '' : `&start=${startVersion}`}`
+    pageview(page, initialTab)
+  }, [])
+
   const handleGoToVersion = (search: string) => {
     if (!search) {
       window.location.href = '/'
@@ -95,11 +102,13 @@ const IndexPage = ({
   )
 
   const handleTabChange = (newTab) => {
+    const page = `/?tab=${newTab}${latest ? '' : `&start=${startVersion}`}`
     window.history.pushState(
       {},
       null,
-      `/?tab=${newTab}${latest ? '' : `&start=${startVersion}`}`
+      page,
     )
+    pageview(page, newTab)
   }
 
   return (
