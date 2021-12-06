@@ -49,7 +49,9 @@ export const getVitals = (): Promise<Vitals> => new Promise((res, rej) => {
     }
     sse.onerror = (err) => {
       sse.close()
-      rej(err)
+      //@ts-ignore
+      res({chain_view: { epoch: 0, height: 0, validator_count: 0, latest_epoch_change_time: 0, waypoint: '', upgrade: {}, epoch_progress: 0, total_supply: 0, validator_view: []}})
+      //rej(err)
     }
   } catch (err) {
     rej(err)

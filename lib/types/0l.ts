@@ -230,6 +230,9 @@ export const getTransactionMin = (tx: Transaction): TransactionMin => {
   const script_function = get(tx, 'transaction.script.function_name')
   const status = get(tx, 'vm_status.type')
 
+  const expiration = get(tx, 'transaction.expiration_timestamp_secs')
+  const timestamp = expiration ? (expiration - 4999) * 1000000 : undefined
+
   const { version, hash } = tx
   const sender = get(tx, 'transaction.sender') || null
   if (script_function === 'create_user_by_coin_tx') {
@@ -240,6 +243,7 @@ export const getTransactionMin = (tx: Transaction): TransactionMin => {
         recipient: onboard_address,
         status,
         sender,
+        timestamp,
         version,
         hash,
       }
@@ -253,17 +257,18 @@ export const getTransactionMin = (tx: Transaction): TransactionMin => {
       status,
       sender,
       version,
+      timestamp,
       hash,
     }
+    
   }
   let type: string = tx.transaction.type
   if (type === 'blockmetadata') {
     type = 'Block Metadata'
-    const timestamp = (tx.transaction as BlockMetadataTransaction)
-      .timestamp_usecs
     return {
       type,
-      timestamp,
+      timestamp: (tx.transaction as BlockMetadataTransaction)
+      .timestamp_usecs,
       hash,
       sender,
       version,
@@ -275,6 +280,7 @@ export const getTransactionMin = (tx: Transaction): TransactionMin => {
     hash,
     sender,
     version,
+    timestamp,
     status,
   }
 }
