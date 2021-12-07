@@ -2,7 +2,7 @@ version: '3'
 services:
   0l:
     build: .
-    command: yarn nodemon --watch routers/ index.js
+    command: yarn nodemon --watch routers/ --watch lib/**/*.js --watch index.js index.js
     environment:
       - PORT=3027
       - NEXT_TELEMETRY_DISABLED=1

@@ -16,10 +16,11 @@ import Search from 'antd/lib/input/Search'
 import ValidatorsTable from '../components/validatorsTable/validatorsTable'
 import { hasInvite, numberWithCommas, getVitals } from '../lib/utils'
 import AutoPayTable from '../components/autoPayTable/autoPayTable'
-import { getStats } from '../lib/api/permissionTree'
+import { getStats, getEpochProofSums } from '../lib/api/permissionTree'
 import EventsTable from '../components/eventsTable/eventsTable'
 import { useEffect } from 'react'
 import { pageview } from '../lib/gtag'
+import EpochsTable from '../components/epochsTable/epochsTable'
 
 const { TabPane } = Tabs
 
@@ -35,6 +36,7 @@ interface IndexPageProps {
   vitals: Vitals
   initialTab: string
   stats: StatsResponse
+  epochMinerStats: Map<string, { proof: number; miners: number }>
 }
 
 const IndexPage = ({
@@ -46,6 +48,7 @@ const IndexPage = ({
   vitals,
   initialTab,
   stats,
+  epochMinerStats,
 }: IndexPageProps) => {
   useEffect(() => {
     const page = `/?tab=${initialTab}${latest ? '' : `&start=${startVersion}`}`
@@ -103,11 +106,7 @@ const IndexPage = ({
 
   const handleTabChange = (newTab) => {
     const page = `/?tab=${newTab}${latest ? '' : `&start=${startVersion}`}`
-    window.history.pushState(
-      {},
-      null,
-      page,
-    )
+    window.history.pushState({}, null, page)
     pageview(page, newTab)
   }
 
@@ -221,6 +220,12 @@ const IndexPage = ({
             </Col>
           </Row>
         </TabPane>
+        <TabPane key="epochs" tab="Epochs">
+          <EpochsTable
+            currentEpoch={vitals.chain_view.epoch}
+            epochMinerStats={epochMinerStats}
+          />
+        </TabPane>
         <TabPane key="validators" tab="Validators">
           <ValidatorsTable
             top={
@@ -251,9 +256,7 @@ const IndexPage = ({
           />
         </TabPane>
         <TabPane key="autoPay" tab="Community Wallets">
-          <AutoPayTable
-            validators={vitals.chain_view.validator_view}
-          />
+          <AutoPayTable validators={vitals.chain_view.validator_view} />
         </TabPane>
       </Tabs>
     </NavLayout>
@@ -273,7 +276,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     { data: metadataRes, status: metadataStatus },
     vitals,
     { data: permissionTreeStats, status: permissionTreeStatsStatus },
-  ] = await Promise.all([getMetadata({}), getVitals(), getStats()])
+    { data: epochProofSums, status: epochProofSumsStatus },
+  ] = await Promise.all([
+    getMetadata({}),
+    getVitals(),
+    getStats(),
+    getEpochProofSums(),
+  ])
   if (metadataStatus !== 200) return { props: {} }
   const {
     result: { version },
@@ -315,6 +324,15 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   const stats = permissionTreeStatsStatus === 200 ? permissionTreeStats : {}
 
+  const epochMinerStats = {}
+
+  if (epochProofSumsStatus === 200) {
+    for (const epochMinerStat of epochProofSums) {
+      const { epoch, miners, proofs } = epochMinerStat
+      epochMinerStats[epoch] = { miners, proofs }
+    }
+  }
+
   return {
     props: {
       transactions,
@@ -324,6 +342,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       previousIsLatest,
       vitals,
       stats,
+      epochMinerStats,
       initialTab: query.tab || 'dashboard',
     },
   }

@@ -25,8 +25,56 @@ body {
 
 .ant-table-thead .ant-table-cell{
   /*background-color: rgb(45, 39, 85);*/
-  background-color: rgb(0, 63, 52);
+  background-color: rgb(0, 63, 52) !important;
   color: #ccc;
+}
+
+.ant-pagination-item {
+  background-color: rgb(0, 63, 52) !important;
+  border-color: rgb(0, 63, 52) !important;
+
+}
+
+.ant-pagination-item:hover {
+  background-color: transparent;
+  border-color: #ffffff99;
+}
+
+.ant-pagination-item:focus {
+  background-color: transparent;
+  border-color: #ffffff99;
+}
+
+.ant-select-selector {
+  background-color: rgb(0, 63, 52) !important;
+  border-color: rgb(0, 63, 52) !important;
+  color: white;
+}
+
+.ant-pagination-item-active {
+  background-color: transparent!important;
+  border-color: #ffffff99!important;
+}
+
+.ant-pagination-item a {
+  color: #aaaaaa;
+}
+
+.ant-pagination-item a:hover {
+  color: white;
+}
+
+.ant-pagination-item-link {
+  background-color: rgb(0, 63, 52) !important;
+  border-color: rgb(0, 63, 52) !important;
+}
+
+.ant-pagination-item-link .anticon {
+  color: white;
+}
+
+.ant-pagination-item-active a {
+  color: white;
 }
 
 .ant-table-column-sort {

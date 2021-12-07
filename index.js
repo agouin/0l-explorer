@@ -4,6 +4,7 @@ const bodyParser = require('koa-bodyparser')
 const Next = require('next')
 const http = require('http')
 const proofsRouter = require('./routers/proofs')
+const epochsRouter = require('./routers/epochs')
 
 const { NODE_ENV, PORT: ENV_PORT } = process.env
 const PORT = ENV_PORT || 3027
@@ -23,6 +24,7 @@ router.get('/(.*)', async (ctx) => {
   ctx.respond = false
 })
 
+app.use(epochsRouter.routes())
 app.use(proofsRouter.routes())
 app.use(router.routes())
 

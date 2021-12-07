@@ -260,15 +260,13 @@ export const getTransactionMin = (tx: Transaction): TransactionMin => {
       timestamp,
       hash,
     }
-    
   }
   let type: string = tx.transaction.type
   if (type === 'blockmetadata') {
     type = 'Block Metadata'
     return {
       type,
-      timestamp: (tx.transaction as BlockMetadataTransaction)
-      .timestamp_usecs,
+      timestamp: (tx.transaction as BlockMetadataTransaction).timestamp_usecs,
       hash,
       sender,
       version,
@@ -415,4 +413,15 @@ export interface PermissionNodeMiner {
 
 export interface MinerPermissionTreeResponse extends PermissionNodeMiner {
   children: PermissionNodeMiner[]
+}
+
+export interface MinerEpochStatsResponse {
+  epoch: number
+  count: number
+}
+
+export interface EpochProofsResponse {
+  epoch: number
+  miners: number
+  proofs: number // Total number of miner proofs in epoch for all miners
 }

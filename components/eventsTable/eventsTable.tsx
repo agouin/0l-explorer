@@ -35,7 +35,10 @@ const EventColumns = [
     sorter: Sorter((record) => get(record, 'data.type')),
     render: (_, record) => {
       const eventType = get(record, 'data.type')
-      return EventTypes[eventType] || eventType
+      return get(record, 'data.sender') ===
+        '00000000000000000000000000000000' && eventType === 'receivedpayment'
+        ? 'Received Reward'
+        : EventTypes[eventType] || eventType
     },
   },
   {
@@ -74,7 +77,9 @@ const EventsTable = ({ events, top, bottom }: EventsTableProps) => (
     <div className={classes.inner}>
       {top}
       <Table
-        rowKey={(row) => `${row.transaction_version}_${row.type}_${row.sender}_${row.recipient}_${row.amount}`}
+        rowKey={(row) =>
+          `${row.transaction_version}_${row.type}_${row.sender}_${row.recipient}_${row.amount}`
+        }
         scroll={{ x: true }}
         columns={EventColumns}
         dataSource={events}

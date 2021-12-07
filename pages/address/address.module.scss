@@ -57,11 +57,26 @@
   margin-right: 16px;
 }
 
-.topStats {
-  justify-content: center;
+.topContainer {
   display: flex;
-  
-  padding: 0px 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.proofHistoryTable {
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  background-color: #003f34;
+  padding: 16px;
+  border-radius: 4px;
+  margin-left: 8px;
+  margin-top: 8px;
+}
+
+.topStats {
+  display: flex;
+  overflow-x: auto;
 }
 
 .topStatsInner {
@@ -70,10 +85,29 @@
  background-color: #003f34;
  padding: 16px;
  border-radius: 4px;
+ margin-top: 8px;
+}
+
+.proofHistoryLabel {
+  margin-bottom: 0px;
+  font-size: 16pt;
+  color: white;
+}
+
+.proofHistoryTitle {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.statsTablesContainer {
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .downloadProofsButton {
-  margin-top: 16px;
+  margin-left: 16px;
 }
 
 @media only screen and (max-width: 991px) {

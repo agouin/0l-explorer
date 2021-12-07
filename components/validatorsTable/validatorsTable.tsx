@@ -30,6 +30,11 @@ const getHasInviteIcon = (epochs_since_last_account_creation) => {
 }
 
 const ValidatorColumns = [
+  { key: 'number',
+    title: '#',
+    width: 60,
+    render: (_, __, i) => `${i + 1}`
+  },
   {
     key: 'account_address',
     dataIndex: 'account_address',
