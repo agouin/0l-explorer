@@ -45,7 +45,7 @@ const EventColumns = [
     key: 'amount',
     title: 'Amount',
     width: 150,
-    sorter: Sorter((record) => get(record, 'data.amount.amount')),
+    sorter: Sorter((record) => get(record, 'data.amount.amount') || 0),
     render: (_, record) => {
       const amount = get(record, 'data.amount.amount')
       if (amount == undefined) return ''
@@ -80,7 +80,7 @@ const EventsTable = ({ events, top, bottom }: EventsTableProps) => {
     <div className={classes.inner}>
       {top}
       <Table
-        rowKey={(row) => `${row.transaction_version}_${row.sequence_number}`}
+        rowKey={(row) =>  `${row.transaction_version}_${row.sequence_number}_${row.key}`}
         scroll={{ x: true }}
         columns={EventColumns}
         dataSource={events}
