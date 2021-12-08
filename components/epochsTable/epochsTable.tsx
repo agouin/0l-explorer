@@ -49,19 +49,20 @@ const EpochsTable = ({
     },
     {
       key: 'miners',
-      title: '# Miners',
+      title: 'Miners',
       width: 120,
       render: (_, record) => get(epochMinerStats[record.epoch], 'miners') || '',
     },
     {
       key: 'proofs',
-      title: '# Proofs',
+      title: 'Proofs',
       width: 120,
       render: (_, record) => get(epochMinerStats[record.epoch], 'proofs') || '',
     },
     {
       key: 'proofs_per_miner',
       title: '~Proofs/Miner',
+      width: 120,
       render: (_, record) => {
         const proofs = get(epochMinerStats[record.epoch], 'proofs')
         if (!proofs) return ''
@@ -69,6 +70,24 @@ const EpochsTable = ({
         if (!miners) return ''
         return (proofs / miners).toFixed(1)
       },
+    },
+    {
+      key: 'miners_payable',
+      title: 'Miners Payable',
+      width: 120,
+      render: (_, record) => get(epochMinerStats[record.epoch], 'miners_payable') || '',
+    },
+    {
+      key: 'miners_payable_proofs',
+      title: 'Miners Payable Proofs',
+      width: 120,
+      render: (_, record) => get(epochMinerStats[record.epoch], 'miners_payable_proofs') || '',
+    },
+    {
+      key: 'validator_proofs',
+      title: 'Validator Proofs',
+      width: 120,
+      render: (_, record) => get(epochMinerStats[record.epoch], 'validator_proofs') || '',
     },
   ]
 

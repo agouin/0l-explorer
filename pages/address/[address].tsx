@@ -1,7 +1,7 @@
 import { message, Row, Col, Button, Table } from 'antd'
 import { DownloadOutlined } from '@ant-design/icons'
 import { GetServerSideProps } from 'next'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import classes from './address.module.scss'
 import {
   getAccount,
@@ -100,6 +100,8 @@ const AddressPage = ({
 }: AddressPageProps) => {
   if (!account) return NotFoundPage()
 
+  const [pageSize, setPageSize] = useState(20)
+
   useEffect(() => {
     pageview('/address', 'address')
     if (errors.length > 0) {
@@ -117,6 +119,10 @@ const AddressPage = ({
       label: account.address,
       value: null,
     })
+  }
+
+  const onPaginationChange = (newPage, newPageSize) => {
+    setPageSize(newPageSize)
   }
 
   const balance = (get(account, 'balances[0].amount') || 0) / 1000000
@@ -261,7 +267,7 @@ const AddressPage = ({
         <Col xs={24} sm={24} md={24} lg={13}>
           <TransactionsTable
             transactions={transactions}
-            pagination={{ pageSize: 20 }}
+            pagination={{ pageSize, onChange: onPaginationChange }}
             top={
               <div>
                 <div className={classes.outerHeader}>

@@ -1,7 +1,7 @@
 import { Table } from 'antd'
 import { Event } from '../../lib/types/0l'
 import classes from './eventsTable.module.scss'
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { get } from 'lodash'
 import { Sorter, numberWithCommas } from '../../lib/utils'
 
@@ -72,22 +72,23 @@ const EventColumns = [
   },
 ]
 
-const EventsTable = ({ events, top, bottom }: EventsTableProps) => (
+const EventsTable = ({ events, top, bottom }: EventsTableProps) => {
+  const [pageSize, setPageSize] = useState(20)
+  const onPageChange = (newPage, newPageSize) => setPageSize(newPageSize)
+  return (
   <div className={classes.tableContainer}>
     <div className={classes.inner}>
       {top}
       <Table
-        rowKey={(row) =>
-          `${row.transaction_version}_${row.type}_${row.sender}_${row.recipient}_${row.amount}`
-        }
+        rowKey={(row) => `${row.transaction_version}_${row.sequence_number}`}
         scroll={{ x: true }}
         columns={EventColumns}
         dataSource={events}
-        pagination={{ pageSize: 20 }}
+        pagination={{ pageSize, onChange: onPageChange }}
       />
       {bottom}
     </div>
   </div>
-)
+)}
 
 export default EventsTable

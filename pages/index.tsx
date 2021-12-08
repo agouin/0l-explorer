@@ -8,6 +8,7 @@ import {
   Vitals,
   StatsResponse,
   Event,
+  EpochProofsResponse,
 } from '../lib/types/0l'
 import TransactionsTable from '../components/transactionsTable/transactionsTable'
 import classes from './index.module.scss'
@@ -36,7 +37,7 @@ interface IndexPageProps {
   vitals: Vitals
   initialTab: string
   stats: StatsResponse
-  epochMinerStats: Map<string, { proof: number; miners: number }>
+  epochMinerStats: Map<string, EpochProofsResponse>
 }
 
 const IndexPage = ({
@@ -119,7 +120,7 @@ const IndexPage = ({
               <div className={classes.infoRow}>
                 <Tooltip title="Current block height">
                   <span className={classes.infoText}>
-                    Height: <span className={classes.thinText}>{height}</span>
+                    Height: <span className={classes.thinText}>{numberWithCommas(height)}</span>
                   </span>
                 </Tooltip>
                 <Tooltip title="Current epoch (rewards are issued at start of epoch)">
@@ -328,8 +329,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   if (epochProofSumsStatus === 200) {
     for (const epochMinerStat of epochProofSums) {
-      const { epoch, miners, proofs } = epochMinerStat
-      epochMinerStats[epoch] = { miners, proofs }
+      const { epoch, miners, proofs, miners_payable, miners_payable_proofs, validator_proofs } = epochMinerStat
+      epochMinerStats[epoch] = { miners, proofs, miners_payable, miners_payable_proofs, validator_proofs }
     }
   }
 

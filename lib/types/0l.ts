@@ -422,6 +422,10 @@ export interface MinerEpochStatsResponse {
 
 export interface EpochProofsResponse {
   epoch: number
-  miners: number
+  miners: number // Total accounts submitting proofs in epoch (miners and validators)
   proofs: number // Total number of miner proofs in epoch for all miners
+  validator_proofs: number // How many of the proofs were by validators
+  miner_proofs: number // How many of the proofs were by miners
+  miners_payable: number // Number of miners that are above payment threshold
+  miners_payable_proofs: number // Total number of proofs submitted by miners that are above the payment threshold
 }
