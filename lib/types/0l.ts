@@ -428,4 +428,5 @@ export interface EpochProofsResponse {
   miner_proofs: number // How many of the proofs were by miners
   miners_payable: number // Number of miners that are above payment threshold
   miners_payable_proofs: number // Total number of proofs submitted by miners that are above the payment threshold
+  miner_payment_total: number // Total 0L distributed amonst miners
 }

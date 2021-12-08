@@ -21,7 +21,7 @@ const DonatePage = () => {
           </h3>
         }
         dataSource={[
-          '0L (GAS) - 4be425e5306776a0bd9e2db152b856e6',
+          '0L (GAS) - b3b77d203bf13c97626137b2ca9d981d',
           'Cosmos (ATOM) - cosmos1zq3r93gs6smvxvmflwwppe930p4wcrc7nwlcp0',
         ]}
         renderItem={(item, i) => (

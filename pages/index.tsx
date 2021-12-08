@@ -329,8 +329,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   if (epochProofSumsStatus === 200) {
     for (const epochMinerStat of epochProofSums) {
-      const { epoch, miners, proofs, miners_payable, miners_payable_proofs, validator_proofs } = epochMinerStat
-      epochMinerStats[epoch] = { miners, proofs, miners_payable, miners_payable_proofs, validator_proofs }
+      const { epoch, miners, proofs, miners_payable, miners_payable_proofs, validator_proofs, miner_payment_total } = epochMinerStat
+      epochMinerStats[epoch] = { miners, proofs, miners_payable, miners_payable_proofs, validator_proofs, ...(miner_payment_total != undefined && {miner_payment_total}) }
     }
   }
 

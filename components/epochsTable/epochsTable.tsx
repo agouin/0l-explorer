@@ -89,6 +89,16 @@ const EpochsTable = ({
       width: 120,
       render: (_, record) => get(epochMinerStats[record.epoch], 'validator_proofs') || '',
     },
+    {
+      key: 'miner_payment_total',
+      title: 'Miner Payment Total',
+      width: 150,
+      render: (_, record) => {
+        const minerPaymentTotal = get(epochMinerStats[record.epoch], 'miner_payment_total')
+        if (minerPaymentTotal === undefined || isNaN(minerPaymentTotal)) return ''
+        return minerPaymentTotal/1000000
+      }
+    },
   ]
 
   const getEpochs = async (start, limit) => {
