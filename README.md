@@ -38,11 +38,24 @@ docker-compose build
 
 ## Build for production
 
+### Build for current architecture only
+
 ```bash
 docker build --no-cache -t 0l-explorer .
 ```
 
 Now distribute the `0lexplorer:latest` docker image to your desired container orchestration platform.
+
+### Build cross platform (i.e. for ARM for AWS Gravitron)
+
+- Install [Docker Buildx](https://docs.docker.com/buildx/working-with-buildx) plugin
+
+```bash
+# CONTAINER_IMAGE is env var pointing to container repository, e.g. AWS ECR
+docker buildx build --platform linux/amd64,linux/arm64 -t $CONTAINER_IMAGE . --push
+```
+
+
 An example kubernetes template file is provided in [0l-explorer.yml](0l-explorer.yml).
 
 Replace `$NODE_HOSTNAME$`, `$CONTAINER_IMAGE$`, `$PERMISSION_TREE_API_URL$` and `$GA_MEASUREMENT_ID$` in the template with valid values for the node to use for RPC calls, the container repository URL, the permission tree API host, and Google Analytics Measurement ID, respectively.

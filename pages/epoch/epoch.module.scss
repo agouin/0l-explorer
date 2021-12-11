@@ -1,0 +1,25 @@
+.title {
+  color: white;
+}
+
+.outerContainer {
+  display: flex;
+  justify-content: center;
+}
+
+.mainContainer {
+  max-width: 2000px;
+}
+
+.chartContainer {
+  width: 734px;
+  margin-left: -40px;
+  overflow: hidden;
+}
+
+
+@media only screen and (max-width: 934px) {
+  .outerContainer {
+    display: block;
+  }
+}

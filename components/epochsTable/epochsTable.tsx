@@ -31,6 +31,7 @@ const EpochsTable = ({
       width: 70,
       title: 'Epoch',
       dataIndex: 'epoch',
+      render: (epoch) => <a href={`/epoch/${epoch}`}>{epoch}</a>,
     },
     {
       key: 'timestamp',

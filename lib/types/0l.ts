@@ -231,7 +231,7 @@ export const getTransactionMin = (tx: Transaction): TransactionMin => {
   const status = get(tx, 'vm_status.type')
 
   const expiration = get(tx, 'transaction.expiration_timestamp_secs')
-  const timestamp = expiration ? (expiration - 4999) * 1000000 : undefined
+  const timestamp = expiration ? (script_function === 'autopay_create_instruction' ? (expiration - 510443) * 1000000 : (expiration - 4999) * 1000000) : undefined
 
   const { version, hash } = tx
   const sender = get(tx, 'transaction.sender') || null
@@ -429,4 +429,9 @@ export interface EpochProofsResponse {
   miners_payable: number // Number of miners that are above payment threshold
   miners_payable_proofs: number // Total number of proofs submitted by miners that are above the payment threshold
   miner_payment_total: number // Total 0L distributed amonst miners
+}
+
+export interface EpochProofsHistogramResponse {
+  proofs: number
+  count: number // miners with this total number of proofs for the specified epoch
 }
