@@ -11,28 +11,30 @@ import {
   getTransactions,
 } from '../../lib/api/node'
 import NavLayout from '../../components/navLayout/navLayout'
-import { AxiosResponse } from 'axios'
 import {
   Account,
-  AccountResponse,
-  TransactionsResponse,
   TransactionMin,
   getTransactionMin,
   NodeRPCError,
-  TowerStateResponse,
   TowerState,
-  EventsResponse,
   Event,
   MinerEpochStatsResponse,
+  ValidatorInfo,
 } from '../../lib/types/0l'
 import { get } from 'lodash'
 import TransactionsTable from '../../components/transactionsTable/transactionsTable'
-import { numberWithCommas } from '../../lib/utils'
+import { getVitals, numberWithCommas } from '../../lib/utils'
 import NotFoundPage from '../404'
-import { getMinerProofHistory } from '../../lib/api/permissionTree'
+import {
+  getMinerProofHistory,
+  getValidatorPermissionTree,
+  getMinerPermissionTree,
+  getEpochsStats
+} from '../../lib/api/permissionTree'
 
 import EventsTable from '../../components/eventsTable/eventsTable'
 import { pageview, event } from '../../lib/gtag'
+import CommunityWallets from '../../lib/communityWallets'
 
 const fallbackCopyTextToClipboard = (text) => {
   var textArea = document.createElement('textarea')
@@ -84,7 +86,13 @@ interface AddressPageProps {
   validatorAccountCreatedBy: string
   towerState: TowerState
   proofHistory: MinerEpochStatsResponse[]
+  type: string
+  validatorAutoPayStats: ValidatorInfo
   errors: NodeRPCError[]
+  minerEpochOnboarded?: number
+  minerGeneration?: number
+  validatorEpochOnboarded?: number
+  validatorGeneration?: number
 }
 
 const AddressPage = ({
@@ -96,7 +104,13 @@ const AddressPage = ({
   validatorAccountCreatedBy,
   towerState,
   proofHistory,
+  type,
+  validatorAutoPayStats,
   errors,
+  minerEpochOnboarded,
+  minerGeneration,
+  validatorEpochOnboarded,
+  validatorGeneration,
 }: AddressPageProps) => {
   if (!account) return NotFoundPage()
 
@@ -145,6 +159,55 @@ const AddressPage = ({
                 {numberWithCommas(balance)}
               </span>
             </h3>
+            {type && (
+              <h1 className={classes.onboardedBy}>
+                Type: <span className={classes.addressText}>{type}</span>
+              </h1>
+            )}
+            {type === 'Validator' && (
+              <h1 className={classes.onboardedBy}>
+                In Active Validator Set:{' '}
+                <span className={classes.addressText}>
+                  {validatorAutoPayStats ? 'Yes' : 'No'}
+                </span>
+              </h1>
+            )}
+            {type === 'Community Wallet' && (
+              <>
+                <h1 className={classes.onboardedBy}>
+                  Name:{' '}
+                  <a
+                    href={CommunityWallets[account.address].link}
+                    target="_blank">
+                    <span className={classes.addressText}>
+                      {CommunityWallets[account.address].text}
+                    </span>
+                  </a>
+                </h1>
+              </>
+            )}
+            {validatorAutoPayStats && (
+              <>
+                <h1 className={classes.onboardedBy}>
+                  Votes in Epoch:{' '}
+                  <span className={classes.addressText}>
+                    {validatorAutoPayStats.vote_count_in_epoch}
+                  </span>
+                </h1>
+                <h1 className={classes.onboardedBy}>
+                  Props In Epoch:{' '}
+                  <span className={classes.addressText}>
+                    {validatorAutoPayStats.prop_count_in_epoch}
+                  </span>
+                </h1>
+                {/* <h1 className={classes.onboardedBy}>
+                  Full Node IP:{' '}
+                  <span className={classes.addressText}>
+                    {validatorAutoPayStats.full_node_ip}
+                  </span>
+                </h1> */}
+              </>
+            )}
             {onboardedBy && (
               <h1 className={classes.onboardedBy}>
                 Onboarded by:{' '}
@@ -157,34 +220,60 @@ const AddressPage = ({
                 )}
               </h1>
             )}
-            {validatorAccountCreatedBy && (
-              <h1 className={classes.onboardedBy}>
-                Created by Validator:{' '}
-                {onboardedBy === '00000000000000000000000000000000' ? (
-                  <span className={classes.addressText}>Genesis</span>
-                ) : (
+            {validatorAccountCreatedBy &&
+              validatorAccountCreatedBy !==
+                '00000000000000000000000000000000' &&
+              towerState && (
+                <h1 className={classes.onboardedBy}>
+                  Created by Validator:{' '}
                   <a href={`/address/${validatorAccountCreatedBy}`}>
                     <span className={classes.addressText}>
                       {validatorAccountCreatedBy}
                     </span>
                   </a>
-                )}
-              </h1>
-            )}
+                </h1>
+              )}
             {operatorAccount && (
               <h1 className={classes.onboardedBy}>
-                Operator Account:{' '}
-                {operatorAccount === '00000000000000000000000000000000' ? (
-                  <span className={classes.addressText}>Genesis</span>
-                ) : (
-                  <a href={`/address/${operatorAccount}`}>
-                    <span className={classes.addressText}>
-                      {operatorAccount}
-                    </span>
-                  </a>
-                )}
+                {towerState ? 'Operator' : 'Validator'}
+                {' Account: '}
+                <a href={`/address/${operatorAccount}`}>
+                  <span className={classes.addressText}>{operatorAccount}</span>
+                </a>
               </h1>
             )}
+            {validatorEpochOnboarded !== null && (
+              <h1 className={classes.onboardedBy}>
+                {'Validator Epoch Onboarded: '}
+                <span className={classes.addressText}>
+                  {validatorEpochOnboarded}
+                </span>
+              </h1>
+            )}
+            {validatorGeneration !== null && (
+              <h1 className={classes.onboardedBy}>
+                {'Validator Generation: '}
+                <span className={classes.addressText}>
+                  {validatorGeneration}
+                </span>
+              </h1>
+            )}
+            {minerEpochOnboarded !== null &&
+              validatorEpochOnboarded !== minerEpochOnboarded && (
+                <h1 className={classes.onboardedBy}>
+                  {'Epoch Onboarded: '}
+                  <span className={classes.addressText}>
+                    {minerEpochOnboarded}
+                  </span>
+                </h1>
+              )}
+            {minerGeneration !== null &&
+              minerGeneration !== validatorGeneration && (
+                <h1 className={classes.onboardedBy}>
+                  {'Generation: '}
+                  <span className={classes.addressText}>{minerGeneration}</span>
+                </h1>
+              )}
           </div>
         </div>
         {towerState && (
@@ -216,7 +305,7 @@ const AddressPage = ({
                   },
                   {
                     stat: 'Proofs in Epoch',
-                    value: towerState.count_proofs_in_epoch,
+                    value: towerState.actual_count_proofs_in_epoch,
                   },
                   {
                     stat: 'Last Epoch Mined',
@@ -262,6 +351,44 @@ const AddressPage = ({
             )}
           </div>
         )}
+        {validatorAutoPayStats && (
+          <div className={classes.proofHistoryTable}>
+            <div className={classes.proofHistoryTitle}>
+              <h3 className={classes.proofHistoryLabel}>
+                Auto Pay Instructions
+              </h3>{' '}
+            </div>
+            <h1 className={classes.onboardedBy}>
+              Total Recurring:{' '}
+              <span className={classes.addressText}>
+                {(validatorAutoPayStats.autopay.recurring_sum / 100).toFixed(2)}
+                %
+              </span>
+            </h1>
+            <Table
+              size="small"
+              rowKey="payee"
+              columns={[
+                {
+                  title: 'Community Wallet',
+                  dataIndex: 'payee',
+                  render: (address) => (
+                    <a href={`/address/${address}`}>{address}</a>
+                  ),
+                },
+                { title: 'Amount', dataIndex: 'amount' },
+                { title: 'End Epoch', dataIndex: 'end_epoch' },
+              ]}
+              dataSource={validatorAutoPayStats.autopay.payments}
+              pagination={{
+                pageSize: 5,
+                showSizeChanger: false,
+                showQuickJumper: false,
+                showPrevNextJumpers: true,
+              }}
+            />
+          </div>
+        )}
       </div>
       <Row>
         <Col xs={24} sm={24} md={24} lg={13}>
@@ -304,6 +431,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { address } = ctx.params
   console.log('Fetching account', address)
   const addressSingle = Array.isArray(address) ? address[0] : address
+  const lowercaseAddress = addressSingle.toLowerCase()
   const eventsKey = `0000000000000000${addressSingle}`
   const [
     { data: accountsRes, status: accountsStatus },
@@ -311,34 +439,32 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     { data: towerRes, status: towerStatus },
     { data: eventsRes, status: eventsStatus },
     { data: proofHistoryRes, status: proofHistoryStatus },
-  ]: [
-    AxiosResponse<AccountResponse>,
-    AxiosResponse<TransactionsResponse>,
-    AxiosResponse<TowerStateResponse>,
-    AxiosResponse<EventsResponse>,
-    AxiosResponse<MinerEpochStatsResponse[]>
+    { data: validatorPermissionTreeRes, status: validatorPermissionTreeStatus },
+    { data: minerPermissionTreeRes, status: minerPermissionTreeStatus },
   ] = await Promise.all([
     getAccount({ account: addressSingle }),
     getAccountTransactions({
       account: addressSingle,
       start: 0,
       limit: 1000,
-      includeEvents: false,
+      includeEvents: true,
     }),
     getTowerState({ account: addressSingle }),
     getEvents({ key: eventsKey, start: 0, limit: 1000 }),
-    getMinerProofHistory(addressSingle.toLowerCase()),
+    getMinerProofHistory(lowercaseAddress),
+    getValidatorPermissionTree(lowercaseAddress),
+    getMinerPermissionTree(lowercaseAddress),
   ])
 
   const errors = []
   if (accountsRes.error) errors.push(accountsRes.error)
   if (transactionsRes.error) errors.push(transactionsRes.error)
-  if (towerRes.error) errors.push(towerRes.error)
+  //if (towerRes.error) errors.push(towerRes.error)
   if (eventsRes.error) errors.push(eventsRes.error)
 
-  const nonZeroEvents = eventsRes.result
-    .slice(0, 20)
-    .filter((event) => event.data.sender !== '00000000000000000000000000000000')
+  const nonZeroEvents = eventsRes.result.filter(
+    (event) => event.data.sender !== '00000000000000000000000000000000'
+  )
 
   const events = []
   let eventsCount = 0
@@ -361,65 +487,103 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     if (nextSetOfEventsRes.status !== 200 || nextSetOfEventsRes.data.error)
       break
     events.unshift(
-      ...nextSetOfEventsRes.data.result.sort(
-        (a, b) => b.transaction_version - a.transaction_version
-      )
+      ...nextSetOfEventsRes.data.result
     )
     eventsCount = nextSetOfEventsRes.data.result.length
     start += eventsCount
   }
 
-  const nonZeroEventTransactionsRes = await Promise.all(
-    nonZeroEvents.map((event) =>
-      getTransactions({
-        startVersion: event.transaction_version,
+  let onboardedBy = null,
+    validatorAccountCreatedBy = null,
+    operatorAccount = null,
+    minerEpochOnboarded = null,
+    minerGeneration = null,
+    validatorEpochOnboarded = null,
+    validatorGeneration = null
+
+  if (minerPermissionTreeStatus === 200 && minerPermissionTreeRes) {
+    if (
+      validatorPermissionTreeStatus === 404 ||
+      !validatorPermissionTreeRes ||
+      validatorPermissionTreeRes.parent !== minerPermissionTreeRes.parent
+    )
+      onboardedBy =
+        minerPermissionTreeRes.parent === '00000000000000000000000000000000'
+          ? 'Genesis'
+          : minerPermissionTreeRes.parent
+    if (minerPermissionTreeRes.epoch_onboarded !== undefined)
+      minerEpochOnboarded = minerPermissionTreeRes.epoch_onboarded
+    if (minerPermissionTreeRes.generation !== undefined)
+      minerGeneration = minerPermissionTreeRes.generation
+  }
+
+  if (validatorPermissionTreeStatus === 200 && validatorPermissionTreeRes) {
+    validatorAccountCreatedBy = validatorPermissionTreeRes.parent
+    if (validatorAccountCreatedBy === '00000000000000000000000000000000')
+      onboardedBy = 'Genesis'
+    if (validatorPermissionTreeRes.operator_address !== undefined)
+      operatorAccount = validatorPermissionTreeRes.operator_address
+    if (validatorPermissionTreeRes.epoch_onboarded !== undefined)
+      validatorEpochOnboarded = validatorPermissionTreeRes.epoch_onboarded
+    if (validatorPermissionTreeRes.generation !== undefined)
+      validatorGeneration = validatorPermissionTreeRes.generation
+  }
+
+  if (
+    minerPermissionTreeStatus === 404 ||
+    validatorPermissionTreeStatus === 404
+  ) {
+    const nonZeroEventTransactionsRes = await Promise.all(
+      nonZeroEvents.map((event) =>
+        getTransactions({
+          startVersion: event.transaction_version,
+          limit: 1,
+          includeEvents: true,
+        })
+      )
+    )
+
+    for (const transaction of nonZeroEventTransactionsRes) {
+      const sender = get(transaction, 'data.result[0].transaction.sender')
+      const functionName = get(
+        transaction,
+        'data.result[0].transaction.script.function_name'
+      )
+      if (functionName === 'create_acc_val') {
+        const events = get(transaction, 'data.result[0].events')
+        if (events && events.length > 0) {
+          const operatorCreateEvent = events.find(
+            (event) =>
+              get(event, 'data.type') === 'receivedpayment' &&
+              get(event, 'data.receiver') !== lowercaseAddress
+          )
+          if (operatorCreateEvent) {
+            operatorAccount = get(operatorCreateEvent, 'data.receiver') || null
+          }
+        }
+        validatorAccountCreatedBy = sender
+      } else if (functionName === 'create_user_by_coin_tx') onboardedBy = sender
+    }
+
+    if (!onboardedBy && !validatorAccountCreatedBy) {
+      onboardedBy = 'Genesis'
+      const genesisBlock = await getTransactions({
+        startVersion: 0,
         limit: 1,
         includeEvents: true,
       })
-    )
-  )
-
-  let onboardedBy = null,
-    validatorAccountCreatedBy = null,
-    operatorAccount = null
-
-  for (const transaction of nonZeroEventTransactionsRes) {
-    const sender = get(transaction, 'data.result[0].transaction.sender')
-    const functionName = get(
-      transaction,
-      'data.result[0].transaction.script.function_name'
-    )
-    if (functionName === 'create_acc_val') {
-      const events = get(transaction, 'data.result[0].events')
-      if (events && events.length > 0) {
-        const operatorCreateEvent = events.find(
-          (event) =>
-            get(event, 'data.type') === 'receivedpayment' &&
-            get(event, 'data.receiver') !== addressSingle.toLowerCase()
+      const genesisEvents = get(genesisBlock, 'data.result[0].events')
+      if (genesisEvents) {
+        const operatorCreateEvent = genesisEvents.find(
+          (event) => get(event, 'data.sender') === lowercaseAddress
         )
-        if (operatorCreateEvent) {
-          operatorAccount = get(operatorCreateEvent, 'data.receiver')
-        }
+        if (operatorCreateEvent)
+          validatorAccountCreatedBy = '00000000000000000000000000000000'
+        operatorAccount = get(operatorCreateEvent, 'data.receiver') || null
       }
-      validatorAccountCreatedBy = sender
-    } else if (functionName === 'create_user_by_coin_tx') onboardedBy = sender
-  }
-
-  if (!onboardedBy && !validatorAccountCreatedBy) {
-    onboardedBy = 'Genesis'
-    const genesisBlock = await getTransactions({
-      startVersion: 0,
-      limit: 1,
-      includeEvents: true,
-    })
-    const genesisEvents = get(genesisBlock, 'data.result[0].events')
-    if (genesisEvents) {
-      const operatorCreateEvent = genesisEvents.find(
-        (event) => get(event, 'data.sender') === addressSingle.toLowerCase()
-      )
-      if (operatorCreateEvent)
-        operatorAccount = get(operatorCreateEvent, 'data.receiver')
     }
+  } else {
+    console.log('got everything we need from permission tree API')
   }
 
   if (!accountsRes.result) ctx.res.statusCode = 404
@@ -454,7 +618,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     transactions.unshift(
       ...transactionsRes.result
         .sort((a, b) => b.version - a.version)
-        .map((tx) => getTransactionMin(tx))
+        .map((tx) => {
+          if (tx.events && tx.events.length) {
+            events.unshift(...tx.events.filter(event => event.data.type === 'sentpayment'))
+          }
+          return getTransactionMin(tx)
+        })
     )
     transactionsCount = transactionsRes.result.length
   }
@@ -466,7 +635,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       account: addressSingle,
       start: startTx,
       limit: 1000,
-      includeEvents: false,
+      includeEvents: true,
     })
     if (
       nextSetOfTransactionsRes.status !== 200 ||
@@ -476,7 +645,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     transactions.unshift(
       ...nextSetOfTransactionsRes.data.result
         .sort((a, b) => b.version - a.version)
-        .map((tx) => getTransactionMin(tx))
+        .map((tx) => {
+          if (tx.events && tx.events.length) {
+            events.unshift(...tx.events.filter(event => event.data.type === 'sentpayment'))
+          }
+          return getTransactionMin(tx)
+        })
     )
     transactionsCount = nextSetOfTransactionsRes.data.result.length
     startTx += transactionsCount
@@ -484,6 +658,40 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   const account: Account = accountsRes.result || null
   const towerState: TowerState = towerRes.result || null
+
+  const type = validatorAccountCreatedBy
+    ? towerState
+      ? 'Validator'
+      : 'Operator'
+    : towerState
+    ? 'Miner'
+    : Object.keys(CommunityWallets).indexOf(lowercaseAddress) !== -1
+    ? 'Community Wallet'
+    : ''
+
+  let validatorAutoPayStats: ValidatorInfo = null
+  if (type === 'Validator') {
+    const vitals = await getVitals()
+    validatorAutoPayStats =
+      vitals.chain_view.validator_view.find(
+        (validator) =>
+          validator.account_address.toLowerCase() === lowercaseAddress
+      ) || null
+
+    const epochsRes = await getEpochsStats()
+    if (epochsRes.status === 200) {
+      const epochEventsRes = await Promise.all(epochsRes.data.map(epoch => getTransactions({ startVersion: epoch.height, limit: 2, includeEvents: true })))
+      for (const epochRes of epochEventsRes) {
+        if (epochRes.status === 200) {
+          for (const result of epochRes.data.result) {
+            if (get(result, 'events.length')) {
+              events.unshift(...result.events.filter(event => event.data.type === 'sentpayment' && get(event, 'data.sender', '').toLowerCase() === lowercaseAddress))
+            }
+          }
+        }
+      }
+    }
+  }
 
   return {
     props: {
@@ -493,13 +701,21 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       operatorAccount,
       validatorAccountCreatedBy,
       proofHistory:
-        towerState && towerState.count_proofs_in_epoch > 0
+        towerState && towerState.actual_count_proofs_in_epoch > 0
           ? proofs.filter(
               (proof) => proof.epoch != towerState.latest_epoch_mining
             )
           : proofs,
-      events,
+      events: events.sort(
+        (a, b) => b.transaction_version - a.transaction_version
+      ),
       towerState,
+      type,
+      validatorAutoPayStats,
+      minerEpochOnboarded,
+      minerGeneration,
+      validatorEpochOnboarded,
+      validatorGeneration,
       errors,
     },
   }

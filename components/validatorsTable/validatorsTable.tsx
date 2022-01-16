@@ -1,120 +1,196 @@
-import { Table } from 'antd'
-import { ValidatorInfo } from '../../lib/types/0l'
+import { Table, Tooltip } from 'antd'
+import { ValidatorInfo, PermissionNodeValidator } from '../../lib/types/0l'
 import classes from './validatorsTable.module.scss'
 import { ReactNode } from 'react'
+import {
+  hasInvite,
+  Sorter,
+  EPOCHS_BEFORE_VALIDATOR_INVITE,
+  PROOFS_THRESHOLD,
+  VALIDATOR_VOTES_PERCENT_THRESHOLD,
+} from '../../lib/utils'
 import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons'
-import { hasInvite } from '../../lib/utils'
+import { get } from 'lodash'
 
 interface ValidatorsTableProps {
   validators: ValidatorInfo[]
+  validatorsMap: Map<string, PermissionNodeValidator>
+  blocksInEpoch: number
   top?: ReactNode | undefined
   bottom?: ReactNode | undefined
 }
 
-const Sorter = (getField) => (a, b) => {
-  const fieldA = getField(a)
-  const fieldB = getField(b)
-  if (fieldA < fieldB) {
-    return -1
-  }
-  if (fieldA > fieldB) {
-    return 1
-  }
-  return 0
-}
-
-const getHasInviteIcon = (epochs_since_last_account_creation) => {
-  if (hasInvite(epochs_since_last_account_creation))
+export const getBoolIcon = (condition) => {
+  if (condition)
     return <CheckCircleFilled style={{ color: '#007054', marginLeft: 8 }} />
   return <CloseCircleFilled style={{ color: 'maroon', marginLeft: 8 }} />
 }
 
-const ValidatorColumns = [
-  { key: 'number',
-    title: '#',
-    width: 60,
-    render: (_, __, i) => `${i + 1}`
-  },
-  {
-    key: 'account_address',
-    dataIndex: 'account_address',
-    width: 300,
-    title: 'Account',
-    render: (text) => <a href={`/address/${text}`}>{text.toLowerCase()}</a>,
-  },
-  {
-    key: 'voting_power',
-    title: 'Voting Power',
-    dataIndex: 'voting_power',
-    sorter: Sorter((record) => record.voting_power),
-    width: 150,
-  },
-  {
-    key: 'count_proofs_in_epoch',
-    title: 'Proofs in Epoch',
-    dataIndex: 'count_proofs_in_epoch',
-    sorter: Sorter((record) => record.count_proofs_in_epoch),
-    width: 150,
-  },
-  {
-    key: 'tower_height',
-    title: 'Tower Height',
-    dataIndex: 'tower_height',
-    sorter: Sorter((record) => record.tower_height),
-    width: 150,
-  },
-  {
-    key: 'vote_count_in_epoch',
-    title: 'Votes in Epoch',
-    dataIndex: 'vote_count_in_epoch',
-    sorter: Sorter((record) => record.vote_count_in_epoch),
-    width: 150,
-  },
-  {
-    key: 'prop_count_in_epoch',
-    title: 'Props in Epoch',
-    dataIndex: 'prop_count_in_epoch',
-    sorter: Sorter((record) => record.prop_count_in_epoch),
-    width: 150,
-  },
-  {
-    key: 'donations',
-    title: 'Auto Pay Donation',
-    dataIndex: 'donation_percent',
-    sorter: Sorter((record: ValidatorInfo) => record.autopay.recurring_sum),
-    width: 120,
-    render: (_, record: ValidatorInfo) =>
-      record.autopay.recurring_sum / 100 + '%',
-  },
-  {
-    key: 'epochs_since_last_account_creation',
-    title: 'Days since last account creation',
-    dataIndex: 'epochs_since_last_account_creation',
-    sorter: Sorter((record) => record.epochs_since_last_account_creation),
-    width: 150,
-    render: (epochs_since_last_account_creation) => (
-      <span>
-        {epochs_since_last_account_creation}
-        {getHasInviteIcon(epochs_since_last_account_creation)}
-      </span>
-    ),
-  },
-]
+const ValidatorsTable = ({
+  validators,
+  validatorsMap,
+  top,
+  bottom,
+  blocksInEpoch,
+}: ValidatorsTableProps) => {
+  const ValidatorColumns = [
+    { key: 'number', title: '#', width: 60, render: (_, __, i) => `${i + 1}` },
+    {
+      key: 'account_address',
+      dataIndex: 'account_address',
+      width: 300,
+      title: 'Account',
+      render: (text) => <a href={`/address/${text}`}>{text.toLowerCase()}</a>,
+    },
+    {
+      key: 'voting_power',
+      title: 'Voting Power',
+      dataIndex: 'voting_power',
+      sorter: Sorter((record) => record.voting_power),
+      width: 150,
+    },
+    {
+      key: 'count_proofs_in_epoch',
+      title: 'Proofs in Epoch',
+      dataIndex: 'count_proofs_in_epoch',
+      sorter: Sorter((record) => record.tower_height - record.voting_power + 1),
+      width: 150,
+      render: (_, record) => {
+        const count_proofs_in_epoch = record.tower_height - record.voting_power + 1
+        const metThreshold = count_proofs_in_epoch > PROOFS_THRESHOLD
+        return (
+          <Tooltip
+            title={
+              metThreshold
+                ? `Submitted more than the threshold of ${PROOFS_THRESHOLD} proofs in the current epoch`
+                : `Must submit ${
+                    PROOFS_THRESHOLD - count_proofs_in_epoch + 1
+                  } more proof${
+                    PROOFS_THRESHOLD - count_proofs_in_epoch == 0 ? '' : 's'
+                  } in the current epoch to stay in the active validator set`
+            }>
+            <span>
+              {count_proofs_in_epoch}
+              {getBoolIcon(metThreshold)}
+            </span>
+          </Tooltip>
+        )
+      },
+    },
+    {
+      key: 'tower_height',
+      title: 'Tower Height',
+      dataIndex: 'tower_height',
+      sorter: Sorter((record) => record.tower_height),
+      width: 150,
+    },
+    {
+      key: 'vote_count_in_epoch',
+      title: 'Votes in Epoch',
+      dataIndex: 'vote_count_in_epoch',
+      sorter: Sorter((record) => record.vote_count_in_epoch),
+      width: 150,
+      render: (vote_count_in_epoch) => {
+        const hasMetVotesThreshold =
+          (100 * vote_count_in_epoch) / blocksInEpoch >
+          VALIDATOR_VOTES_PERCENT_THRESHOLD
+        return (
+          <Tooltip
+            title={
+              hasMetVotesThreshold
+                ? `Signed at least ${VALIDATOR_VOTES_PERCENT_THRESHOLD}% of blocks in the current epoch`
+                : `Has not signed at least ${VALIDATOR_VOTES_PERCENT_THRESHOLD}% of blocks in the current epoch`
+            }>
+            <span>
+              {vote_count_in_epoch}
+              {getBoolIcon(hasMetVotesThreshold)}
+            </span>
+          </Tooltip>
+        )
+      },
+    },
+    {
+      key: 'prop_count_in_epoch',
+      title: 'Props in Epoch',
+      dataIndex: 'prop_count_in_epoch',
+      sorter: Sorter((record) => record.prop_count_in_epoch),
+      width: 150,
+    },
+    {
+      key: 'donations',
+      title: 'Auto Pay Donation',
+      dataIndex: 'donation_percent',
+      sorter: Sorter((record: ValidatorInfo) =>
+        get(record, 'autopay.recurring_sum', 0)
+      ),
+      width: 120,
+      render: (_, record: ValidatorInfo) => {
+        const autoPaySum = get(record, 'autopay.recurring_sum', 0)
+        const hasAutoPay = autoPaySum > 0
+        
+        return <Tooltip title={`Auto Pay is${hasAutoPay ? '': ' not'} configured to the Community Wallets` }><span>
+          {autoPaySum / 100 + '%'}
+          {getBoolIcon(hasAutoPay)}
+          </span></Tooltip> 
+      },
+    },
+    {
+      key: 'epochs_since_last_account_creation',
+      title: 'Days since last account creation',
+      dataIndex: 'epochs_since_last_account_creation',
+      sorter: Sorter((record) => record.epochs_since_last_account_creation),
+      width: 150,
+      render: (epochs_since_last_account_creation) => {
+        const canInvite = hasInvite(epochs_since_last_account_creation)
 
-const ValidatorsTable = ({ validators, top, bottom }: ValidatorsTableProps) => (
-  <div className={classes.tableContainer}>
-    <div className={classes.inner}>
-      {top}
-      <Table
-        rowKey="account_address"
-        scroll={{ x: true }}
-        columns={ValidatorColumns}
-        dataSource={validators}
-        pagination={false}
-      />
-      {bottom}
+        return (
+          <Tooltip
+            title={
+              canInvite
+                ? 'Can onboard another validator'
+                : `${
+                    EPOCHS_BEFORE_VALIDATOR_INVITE -
+                    epochs_since_last_account_creation
+                  } epochs remaining until able to onboard another validator`
+            }>
+            <span>{epochs_since_last_account_creation}</span>
+          </Tooltip>
+        )
+      },
+    },
+    {
+      key: 'epoch_onboarded',
+      title: 'Epoch Onboarded',
+      width: 100,
+      sorter: Sorter((record: ValidatorInfo) =>
+        get(
+          validatorsMap[record.account_address.toLowerCase()],
+          'epoch_onboarded'
+        )
+      ),
+      render: (_, record: ValidatorInfo) =>
+        get(
+          validatorsMap[record.account_address.toLowerCase()],
+          'epoch_onboarded'
+        ),
+    },
+  ]
+
+  return (
+    <div className={classes.tableContainer}>
+      <div className={classes.inner}>
+        {top}
+        <Table
+          rowKey="account_address"
+          scroll={{ x: true }}
+          columns={ValidatorColumns}
+          dataSource={validators}
+          pagination={false}
+        />
+        {bottom}
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 export default ValidatorsTable

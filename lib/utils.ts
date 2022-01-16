@@ -1,10 +1,16 @@
 import { Vitals } from './types/0l'
 import EventSource from 'eventsource'
 
-const { NODE_HOSTNAME } = process.env
+const { WEB_MONITOR_HOSTNAME } = process.env
+
+export const EPOCHS_BEFORE_VALIDATOR_INVITE = 14
+
+export const PROOFS_THRESHOLD = 7
+
+export const VALIDATOR_VOTES_PERCENT_THRESHOLD = 1
 
 export const hasInvite = (epochs_since_last_account_creation) =>
-  epochs_since_last_account_creation >= 14
+  epochs_since_last_account_creation >= EPOCHS_BEFORE_VALIDATOR_INVITE
 
 export const numberWithCommas = (x) => x.toLocaleString('en-US')
 
@@ -40,7 +46,7 @@ export const timeDifference = (current, previous) => {
 
 export const getVitals = (): Promise<Vitals> =>
   new Promise((res, rej) => {
-    const uri = `http://${NODE_HOSTNAME}:3030/vitals`
+    const uri = `http://${WEB_MONITOR_HOSTNAME}:3030/vitals`
     try {
       const sse = new EventSource(uri)
       sse.onmessage = (msg) => {

@@ -9,19 +9,25 @@ import {
   StatsResponse,
   Event,
   EpochProofsResponse,
+  ValidatorPermissionTreeResponse,
+  PermissionNodeValidator,
 } from '../lib/types/0l'
 import TransactionsTable from '../components/transactionsTable/transactionsTable'
 import classes from './index.module.scss'
-import { Button, message, Progress, Tooltip, Tabs, Col, Row } from 'antd'
+import { Button, message, Progress, Tooltip, Tabs, Col, Row, Table } from 'antd'
 import Search from 'antd/lib/input/Search'
 import ValidatorsTable from '../components/validatorsTable/validatorsTable'
 import { hasInvite, numberWithCommas, getVitals } from '../lib/utils'
 import AutoPayTable from '../components/autoPayTable/autoPayTable'
-import { getStats, getEpochProofSums } from '../lib/api/permissionTree'
+import { getStats, getEpochProofSums, getValidators, getEpochStats } from '../lib/api/permissionTree'
 import EventsTable from '../components/eventsTable/eventsTable'
 import { useEffect } from 'react'
 import { pageview } from '../lib/gtag'
 import EpochsTable from '../components/epochsTable/epochsTable'
+import UpgradesTable from '../components/upgradesTable/upgradesTable'
+import { get } from 'lodash'
+import { execSync } from 'child_process'
+import InactiveValidatorsTable from '../components/inactiveValidatorsTable/inactiveValidatorsTable'
 
 const { TabPane } = Tabs
 
@@ -38,6 +44,11 @@ interface IndexPageProps {
   initialTab: string
   stats: StatsResponse
   epochMinerStats: Map<string, EpochProofsResponse>
+  blocksInEpoch: number
+  allValidators: PermissionNodeValidator[]
+  validatorsMap: Map<string, PermissionNodeValidator>
+  inactiveValidators: PermissionNodeValidator[]
+  vals: any
 }
 
 const IndexPage = ({
@@ -50,11 +61,17 @@ const IndexPage = ({
   initialTab,
   stats,
   epochMinerStats,
+  blocksInEpoch,
+  validatorsMap,
+  inactiveValidators,
+  vals
 }: IndexPageProps) => {
   useEffect(() => {
     const page = `/?tab=${initialTab}${latest ? '' : `&start=${startVersion}`}`
     pageview(page, initialTab)
   }, [])
+
+  //console.log(JSON.stringify(vals.filter(val => val.reachable)))
 
   const handleGoToVersion = (search: string) => {
     if (!search) {
@@ -75,7 +92,8 @@ const IndexPage = ({
         <a
           href={
             previousIsLatest ? '/' : `/?start=${startVersion + TX_PER_PAGE}`
-          }>
+          }
+        >
           <Button type="primary" size="small" className={classes.pagerButton}>
             <CaretLeftFilled />
           </Button>
@@ -85,7 +103,8 @@ const IndexPage = ({
           type="primary"
           size="small"
           className={classes.pagerButton}
-          disabled>
+          disabled
+        >
           <CaretLeftFilled />
         </Button>
       )}
@@ -111,6 +130,24 @@ const IndexPage = ({
     pageview(page, newTab)
   }
 
+  const getCurrentUpgradeConsensus = () => {
+    if (!vitals.chain_view.upgrade) return null
+    let totalVotingPower = 0
+    for (const validator of vitals.chain_view.validator_view) {
+      totalVotingPower += validator.voting_power
+    }
+    let totalWeight = 0
+    for (const vote of vitals.chain_view.upgrade.upgrade.votes) {
+    totalWeight += vote.weight
+    }
+   // const totalWeight = get(vitals, 'chain_view.upgrade.upgrade.consensus.total_weight')
+    const percentage = (100.0 * totalWeight / totalVotingPower)
+
+    return <span>{totalWeight}/{totalVotingPower} (<span style={{ color: percentage > (200.0/3.0) ? 'rgb(1 217 163)':'maroon' }}>{percentage.toFixed(2)}%</span>)</span>
+  }
+
+  console.log({upgrade: vitals.chain_view.upgrade})
+
   return (
     <NavLayout>
       <Tabs defaultActiveKey={initialTab} centered onChange={handleTabChange}>
@@ -120,7 +157,10 @@ const IndexPage = ({
               <div className={classes.infoRow}>
                 <Tooltip title="Current block height">
                   <span className={classes.infoText}>
-                    Height: <span className={classes.thinText}>{numberWithCommas(height)}</span>
+                    Height:{' '}
+                    <span className={classes.thinText}>
+                      {numberWithCommas(height)}
+                    </span>
                   </span>
                 </Tooltip>
                 <Tooltip title="Current epoch (rewards are issued at start of epoch)">
@@ -229,35 +269,77 @@ const IndexPage = ({
         </TabPane>
         <TabPane key="validators" tab="Validators">
           <ValidatorsTable
-            top={
-              <span className={classes.infoText}>
-                Validators:{' '}
-                <Tooltip
-                  title={
-                    <span className={classes.infoText}>
-                      Can create account:{' '}
-                      <span className={classes.thinText}>
-                        {
-                          vitals.chain_view.validator_view.filter((validator) =>
-                            hasInvite(
-                              validator.epochs_since_last_account_creation
-                            )
-                          ).length
-                        }
-                      </span>
-                    </span>
-                  }>
-                  <span className={classes.thinText}>
-                    {vitals.chain_view.validator_count}
-                  </span>
-                </Tooltip>
-              </span>
-            }
+            top={<span style={{fontSize: 20}}>Active Validator Set ({vitals.chain_view.validator_count})</span>}
             validators={vitals.chain_view.validator_view}
+            validatorsMap={validatorsMap}
+            blocksInEpoch={blocksInEpoch}
+          />
+          <InactiveValidatorsTable
+            top={<span style={{fontSize: 20}}>Inactive Validators ({inactiveValidators.length})</span>}
+            validators={inactiveValidators}
+            validatorsMap={validatorsMap}
           />
         </TabPane>
         <TabPane key="autoPay" tab="Community Wallets">
           <AutoPayTable validators={vitals.chain_view.validator_view} />
+        </TabPane>
+        <TabPane key="upgrades" tab="Upgrades">
+          <div className={classes.topStats}>
+            <div className={classes.topStatsInner}>
+              {get(vitals, 'chain_view.upgrade.upgrade.vote_counts[0].hash.length') ? (
+                <>
+                 {get(vitals, 'chain_view.upgrade.upgrade.consensus.hash') &&
+                  <div className={classes.infoRow}>
+                    <Tooltip title="Hash of proposed stdlib binary">
+                      <span className={classes.infoText}>
+                        Hash:{' '}
+                        <span className={classes.thinText}>
+                          {vitals.chain_view.upgrade.upgrade.vote_counts[0].hash
+                            .map((x) => x.toString(16))
+                            .join('')}
+                        </span>
+                      </span>
+                    </Tooltip>
+                  </div>}
+                  <div className={classes.infoRow}>
+                    <Tooltip title="Number of validators that have voted with approval on this proposal">
+                      <span className={classes.infoText}>
+                        Voters:{' '}
+                        <span className={classes.thinText}>
+                          {
+                            vitals.chain_view.upgrade.upgrade.validators_voted
+                              .length
+                          }
+                          /{vitals.chain_view.validator_count}
+                        </span>
+                      </span>
+                    </Tooltip>
+                    <Tooltip title="Proposal expires after this block height without consensus">
+                      <span className={classes.infoText}>
+                        Expiration:{' '}
+                        <span className={classes.thinText}>
+                          {vitals.chain_view.upgrade.upgrade.vote_window}
+                        </span>
+                      </span>
+                    </Tooltip>
+                  </div>
+                  <div className={classes.infoRow}>
+                    <Tooltip title="Current consensus (voted voting power out of total validator voting power)">
+                      <span className={classes.infoText}>
+                        Consensus:{' '}
+                        <span className={classes.thinText}>
+                          {getCurrentUpgradeConsensus()}
+                        </span>
+                      </span>
+                    </Tooltip>
+                    </div>
+                </>
+              ) : (
+                <div>No Active Upgrade Voting</div>
+              )}
+            </div>
+          </div>
+          {get(vitals, 'chain_view.upgrade.upgrade.vote_counts[0].hash.length') && <UpgradesTable vitals={vitals} />}
         </TabPane>
       </Tabs>
     </NavLayout>
@@ -278,11 +360,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     vitals,
     { data: permissionTreeStats, status: permissionTreeStatsStatus },
     { data: epochProofSums, status: epochProofSumsStatus },
+    { data: allValidators, status: validatorsStatus }
   ] = await Promise.all([
     getMetadata({}),
     getVitals(),
     getStats(),
     getEpochProofSums(),
+    getValidators()
   ])
   if (metadataStatus !== 200) return { props: {} }
   const {
@@ -299,14 +383,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const latest = startVersion + TX_PER_PAGE > version
   const previousIsLatest = startVersion + 2 * TX_PER_PAGE > version
 
-  const {
-    data: transactionsRes,
-    status: transactionsStatus,
-  } = await getTransactions({
-    startVersion,
-    limit: TX_PER_PAGE,
-    includeEvents: true,
-  })
+  const { data: transactionsRes, status: transactionsStatus } =
+    await getTransactions({
+      startVersion,
+      limit: TX_PER_PAGE,
+      includeEvents: true,
+    })
 
   const transactions: TransactionMin[] =
     transactionsStatus === 200
@@ -329,8 +411,54 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   if (epochProofSumsStatus === 200) {
     for (const epochMinerStat of epochProofSums) {
-      const { epoch, miners, proofs, miners_payable, miners_payable_proofs, validator_proofs, miner_payment_total } = epochMinerStat
-      epochMinerStats[epoch] = { miners, proofs, miners_payable, miners_payable_proofs, validator_proofs, ...(miner_payment_total != undefined && {miner_payment_total}) }
+      const {
+        epoch,
+        miners,
+        proofs,
+        miners_payable,
+        miners_payable_proofs,
+        validator_proofs,
+        miner_payment_total,
+      } = epochMinerStat
+      epochMinerStats[epoch] = {
+        miners,
+        proofs,
+        miners_payable,
+        miners_payable_proofs,
+        validator_proofs,
+        ...(miner_payment_total != undefined && { miner_payment_total }),
+      }
+    }
+  }
+
+  const inactiveValidators = allValidators.filter(validator => !vitals.chain_view.validator_view.find(activeVal => activeVal.account_address.toLowerCase() === validator.address.toLowerCase()))
+
+  const validatorsMap = {}
+
+  for (const validator of allValidators) {
+    validatorsMap[validator.address.toLowerCase()] = validator
+  }
+
+  const vals = vitals.chain_view.validator_view.map(validator => ({ 
+    address: validator.account_address, ip:validator.full_node_ip.match(/\/ip4\/(.*?)\/tcp\/(\d+)\/.*/).splice(1,2), reachable: null
+  }))
+
+  // for (let i = 0; i < vals.length; i++) {
+  //   try {
+  //     execSync(`nc -zw5 ${vals[i].ip[0]} 8080`)
+  //     vals[i].reachable = true
+  //   } catch(err) {
+  //     vals[i].reachable = false
+  //     console.log('val not reachable',  vals[i])
+  //   }
+  // }
+
+  let blocksInEpoch = 0
+
+  if (vitals.chain_view.epoch) {
+    const currentEpochRes = await getEpochStats(vitals.chain_view.epoch)
+    if (currentEpochRes.status === 200) {
+      blocksInEpoch = vitals.chain_view.height - currentEpochRes.data.height
     }
   }
 
@@ -344,7 +472,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       vitals,
       stats,
       epochMinerStats,
+      allValidators,
+      inactiveValidators,
+      validatorsMap,
+      blocksInEpoch,
       initialTab: query.tab || 'dashboard',
+      vals
     },
   }
 }

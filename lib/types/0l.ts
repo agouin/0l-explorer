@@ -206,6 +206,7 @@ export interface TowerState {
   verified_tower_height: number
   latest_epoch_mining: number
   count_proofs_in_epoch: number
+  actual_count_proofs_in_epoch: number
   epochs_validating_and_mining: number
   contiguous_epochs_validating_and_mining: number
   epochs_since_last_account_creation: number
@@ -394,8 +395,11 @@ export interface StatsResponse {
 
 export interface PermissionNodeValidator {
   address: string // Address of this validator
+  operator_address: string // Operator account address
   parent: string // Address of validator that onboarded this validator
   version_onboarded: number // Height when validator was onboarded
+  epoch_onboarded: number
+  generation: number
 }
 
 export interface ValidatorPermissionTreeResponse
@@ -407,6 +411,8 @@ export interface PermissionNodeMiner {
   address: string // Address of this validator
   parent: string // Address of validator that onboarded this validator
   version_onboarded: number // Height when validator was onboarded
+  epoch_onboarded: number
+  generation: number
   has_tower: boolean // Does miner have tower height > 0 ?
   is_active: boolean // Has miner submitted proofs in current epoch?
 }
@@ -418,6 +424,12 @@ export interface MinerPermissionTreeResponse extends PermissionNodeMiner {
 export interface MinerEpochStatsResponse {
   epoch: number
   count: number
+}
+
+export interface EpochStatsResponse {
+  epoch: number
+  height: number
+  timestamp: number
 }
 
 export interface EpochProofsResponse {

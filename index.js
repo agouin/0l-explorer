@@ -5,6 +5,7 @@ const Next = require('next')
 const http = require('http')
 const proofsRouter = require('./routers/proofs')
 const epochsRouter = require('./routers/epochs')
+const towerRouter = require('./routers/tower')
 
 const { NODE_ENV, PORT: ENV_PORT } = process.env
 const PORT = ENV_PORT || 3027
@@ -26,6 +27,7 @@ router.get('/(.*)', async (ctx) => {
 
 app.use(epochsRouter.routes())
 app.use(proofsRouter.routes())
+app.use(towerRouter.routes())
 app.use(router.routes())
 
 app.on('error', (error) => {

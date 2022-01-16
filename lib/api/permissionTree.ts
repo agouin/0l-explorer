@@ -8,6 +8,8 @@ import {
   MinerEpochStatsResponse,
   EpochProofsResponse,
   EpochProofsHistogramResponse,
+  PermissionNodeValidator,
+  EpochStatsResponse,
 } from '../types/0l'
 
 const { PERMISSION_TREE_API_URL } = process.env
@@ -24,6 +26,10 @@ export const getValidatorPermissionTree = async (
 ): Promise<AxiosResponse<ValidatorPermissionTreeResponse>> =>
   await PermissionTreeAPI.GET(`/permission-tree/validator/${address}`)
 
+export const getValidators = async (): Promise<
+  AxiosResponse<PermissionNodeValidator[]>
+> => await PermissionTreeAPI.GET('/permission-tree/validators')
+
 export const getMinerPermissionTree = async (
   address: string
 ): Promise<AxiosResponse<MinerPermissionTreeResponse>> =>
@@ -34,13 +40,18 @@ export const getMinerProofHistory = async (
 ): Promise<AxiosResponse<MinerEpochStatsResponse[]>> =>
   await PermissionTreeAPI.GET(`/epochs/proofs/${address}`)
 
+export const getEpochStats = async (epoch : number): Promise<AxiosResponse<EpochStatsResponse>> => await PermissionTreeAPI.GET(`/epochs/${epoch}`)
+
+export const getEpochsStats = async (): Promise<AxiosResponse<EpochStatsResponse[]>> => await PermissionTreeAPI.GET(`/epochs`)
+
 export const getEpochProofSums = async (): Promise<
   AxiosResponse<EpochProofsResponse[]>
 > => await PermissionTreeAPI.GET('/epochs/proofs/sum')
 
-export const getEpochProofSum = async (epoch: number): Promise<
-  AxiosResponse<EpochProofsResponse[]>
-> => await PermissionTreeAPI.GET(`/epochs/proofs/sum/${epoch}`)
+export const getEpochProofSum = async (
+  epoch: number
+): Promise<AxiosResponse<EpochProofsResponse[]>> =>
+  await PermissionTreeAPI.GET(`/epochs/proofs/sum/${epoch}`)
 
 export const getEpochHistogram = async (
   epoch: number

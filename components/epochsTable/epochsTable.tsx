@@ -1,9 +1,10 @@
 import { Table, message, Spin } from 'antd'
 import classes from './epochsTable.module.scss'
-import { useState, useEffect, ReactNode, useRef } from 'react'
+import { useState, useEffect, ReactNode } from 'react'
 import API from '../../lib/api/local'
-import { getEpochProofSums } from '../../lib/api/permissionTree'
 import { get } from 'lodash'
+import { EpochStatsResponse } from '../../lib/types/0l'
+import { AxiosResponse } from 'axios'
 
 interface Epoch {
   epoch: number
@@ -105,10 +106,12 @@ const EpochsTable = ({
   const getEpochs = async (start, limit) => {
     setLoading(true)
 
-    const epochsRes = await API.GET('/epochs', { start, limit })
+    const epochsRes: AxiosResponse<EpochStatsResponse[]> = await API.GET('/epochs', { start, limit })
 
     if (epochsRes.status !== 200) {
-      message.error(`Error getting epochs: ${epochsRes.data}`)
+      message.error(`Error getting epochs: ${epochsRes.statusText}`)
+      console.error(epochsRes)
+      setLoading(false)
       return
     }
 
