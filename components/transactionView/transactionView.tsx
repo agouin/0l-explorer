@@ -10,16 +10,19 @@ interface TransactionViewProps {
   bottom?: ReactNode | undefined
 }
 
+const AbortCodeMap = {
+  130108: 'Count above epoch threshold (130108)',
+  130109: 'Proof is not consecutive (130109)',
+  130110: 'Proof is false (130110)'
+}
+
 const TransactionView = ({
   transaction,
   top,
   bottom,
 }: TransactionViewProps) => {
   if (!transaction) return null
-  const {
-    transaction: tx,
-    vm_status: { type: status },
-  } = transaction
+  const { transaction: tx, vm_status } = transaction
 
   const info: {
     key: string
@@ -28,10 +31,48 @@ const TransactionView = ({
   }[] = [
     { key: 'version', title: 'Version', value: transaction.version },
     { key: 'hash', title: 'Hash', value: transaction.hash },
-    { key: 'status', title: 'Status', value: status },
     { key: 'type', title: 'Type', value: tx.type },
     { key: 'gas_used', title: 'Gas Used', value: transaction.gas_used },
+    { key: 'status', title: 'Status', value: vm_status.type },
   ]
+
+  if (vm_status.type === 'move_abort') {
+    info.push(
+      {
+        key: 'abort_code',
+        title: 'Abort Code',
+        value: AbortCodeMap[vm_status.abort_code] || vm_status.abort_code
+      },
+      {
+        key: 'explanation',
+        title: 'Explanation',
+        value: vm_status.explanation,
+      },
+      {
+        key: 'location',
+        title: 'Location',
+        value: vm_status.location,
+      }
+    )
+  } else if (vm_status.type === 'execution_failure') {
+    info.push(
+      {
+        key: 'location',
+        title: 'Location',
+        value: vm_status.location,
+      },
+      {
+        key: 'function_index',
+        title: 'Function Index',
+        value: vm_status.function_index,
+      },
+      {
+        key: 'code_offset',
+        title: 'Code Offset',
+        value: vm_status.code_offset,
+      }
+    )
+  }
 
   const sender = get(tx, 'sender')
   if (sender)
@@ -70,6 +111,7 @@ const TransactionView = ({
           })
         }
       }
+
       info.push(
         {
           key: 'signature_scheme',

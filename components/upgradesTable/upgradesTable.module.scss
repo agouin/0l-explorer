@@ -13,3 +13,27 @@
     display: block;
   }
 }
+
+.topStats {
+  justify-content: center;
+  display: flex;
+}
+
+.topStatsInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #003f34;
+  padding: 16px;
+  border-radius: 4px;
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.proposal {
+  margin: 0px 8px;
+}

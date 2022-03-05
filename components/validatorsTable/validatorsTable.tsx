@@ -11,6 +11,7 @@ import {
 } from '../../lib/utils'
 import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons'
 import { get } from 'lodash'
+import { SortOrder } from 'antd/lib/table/interface'
 
 interface ValidatorsTableProps {
   validators: ValidatorInfo[]
@@ -18,6 +19,9 @@ interface ValidatorsTableProps {
   blocksInEpoch: number
   top?: ReactNode | undefined
   bottom?: ReactNode | undefined
+  onSortChange: ({order, field, columnKey})=>void
+  defaultSortKey: string
+  defaultSortOrder: SortOrder
 }
 
 export const getBoolIcon = (condition) => {
@@ -32,12 +36,20 @@ const ValidatorsTable = ({
   top,
   bottom,
   blocksInEpoch,
+  onSortChange,
+  defaultSortKey,
+  defaultSortOrder
 }: ValidatorsTableProps) => {
+  const getDefaultSortOrder = key => {
+    if (key == defaultSortKey) return defaultSortOrder
+    return undefined
+  }
   const ValidatorColumns = [
     { key: 'number', title: '#', width: 60, render: (_, __, i) => `${i + 1}` },
     {
       key: 'account_address',
       dataIndex: 'account_address',
+      defaultSortOrder: getDefaultSortOrder('account_address'),
       width: 300,
       title: 'Account',
       render: (text) => <a href={`/address/${text}`}>{text.toLowerCase()}</a>,
@@ -45,12 +57,14 @@ const ValidatorsTable = ({
     {
       key: 'voting_power',
       title: 'Voting Power',
+      defaultSortOrder: getDefaultSortOrder('voting_power'),
       dataIndex: 'voting_power',
       sorter: Sorter((record) => record.voting_power),
       width: 150,
     },
     {
       key: 'count_proofs_in_epoch',
+      defaultSortOrder: getDefaultSortOrder('count_proofs_in_epoch'),
       title: 'Proofs in Epoch',
       dataIndex: 'count_proofs_in_epoch',
       sorter: Sorter((record) => record.tower_height - record.voting_power + 1),
@@ -79,6 +93,7 @@ const ValidatorsTable = ({
     },
     {
       key: 'tower_height',
+      defaultSortOrder: getDefaultSortOrder('tower_height'),
       title: 'Tower Height',
       dataIndex: 'tower_height',
       sorter: Sorter((record) => record.tower_height),
@@ -86,6 +101,7 @@ const ValidatorsTable = ({
     },
     {
       key: 'vote_count_in_epoch',
+      defaultSortOrder: getDefaultSortOrder('vote_count_in_epoch'),
       title: 'Votes in Epoch',
       dataIndex: 'vote_count_in_epoch',
       sorter: Sorter((record) => record.vote_count_in_epoch),
@@ -111,13 +127,15 @@ const ValidatorsTable = ({
     },
     {
       key: 'prop_count_in_epoch',
+      defaultSortOrder: getDefaultSortOrder('prop_count_in_epoch'),
       title: 'Props in Epoch',
       dataIndex: 'prop_count_in_epoch',
       sorter: Sorter((record) => record.prop_count_in_epoch),
       width: 150,
     },
     {
-      key: 'donations',
+      key: 'donation_percent',
+      defaultSortOrder: getDefaultSortOrder('donation_percent'),
       title: 'Auto Pay Donation',
       dataIndex: 'donation_percent',
       sorter: Sorter((record: ValidatorInfo) =>
@@ -136,6 +154,7 @@ const ValidatorsTable = ({
     },
     {
       key: 'epochs_since_last_account_creation',
+      defaultSortOrder: getDefaultSortOrder('epochs_since_last_account_creation'),
       title: 'Days since last account creation',
       dataIndex: 'epochs_since_last_account_creation',
       sorter: Sorter((record) => record.epochs_since_last_account_creation),
@@ -160,6 +179,7 @@ const ValidatorsTable = ({
     },
     {
       key: 'epoch_onboarded',
+      defaultSortOrder: getDefaultSortOrder('epoch_onboarded'),
       title: 'Epoch Onboarded',
       width: 100,
       sorter: Sorter((record: ValidatorInfo) =>
@@ -176,6 +196,8 @@ const ValidatorsTable = ({
     },
   ]
 
+  const handleTableChange = (_, __, sorter) => onSortChange(sorter)
+
   return (
     <div className={classes.tableContainer}>
       <div className={classes.inner}>
@@ -186,6 +208,7 @@ const ValidatorsTable = ({
           columns={ValidatorColumns}
           dataSource={validators}
           pagination={false}
+          onChange={handleTableChange}
         />
         {bottom}
       </div>

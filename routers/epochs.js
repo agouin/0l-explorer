@@ -1,7 +1,7 @@
 const Router = require('@koa/router')
 const { getEvents, getTransactions } = require('../lib/api/node')
 
-const router = new Router({prefix: '/epochs'})
+const router = new Router({prefix: '/api/epochs'})
 
 router.get('/', async ctx => {
   const { start: queryStart, limit: queryLimit } = ctx.query

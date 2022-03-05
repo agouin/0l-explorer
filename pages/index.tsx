@@ -21,13 +21,14 @@ import { hasInvite, numberWithCommas, getVitals } from '../lib/utils'
 import AutoPayTable from '../components/autoPayTable/autoPayTable'
 import { getStats, getEpochProofSums, getValidators, getEpochStats } from '../lib/api/permissionTree'
 import EventsTable from '../components/eventsTable/eventsTable'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { pageview } from '../lib/gtag'
 import EpochsTable from '../components/epochsTable/epochsTable'
 import UpgradesTable from '../components/upgradesTable/upgradesTable'
 import { get } from 'lodash'
 import { execSync } from 'child_process'
 import InactiveValidatorsTable from '../components/inactiveValidatorsTable/inactiveValidatorsTable'
+import { SortOrder } from 'antd/lib/table/interface'
 
 const { TabPane } = Tabs
 
@@ -49,6 +50,8 @@ interface IndexPageProps {
   validatorsMap: Map<string, PermissionNodeValidator>
   inactiveValidators: PermissionNodeValidator[]
   vals: any
+  defaultSortKey: string
+  defaultSortOrder: SortOrder
 }
 
 const IndexPage = ({
@@ -64,12 +67,19 @@ const IndexPage = ({
   blocksInEpoch,
   validatorsMap,
   inactiveValidators,
-  vals
+  vals,
+  defaultSortKey,
+  defaultSortOrder
 }: IndexPageProps) => {
   useEffect(() => {
     const page = `/?tab=${initialTab}${latest ? '' : `&start=${startVersion}`}`
     pageview(page, initialTab)
   }, [])
+
+  const start = useRef(startVersion)
+  const tab = useRef(initialTab)
+  const sortKey = useRef(defaultSortKey)
+  const sortOrder = useRef(defaultSortOrder)
 
   //console.log(JSON.stringify(vals.filter(val => val.reachable)))
 
@@ -124,29 +134,32 @@ const IndexPage = ({
     transactions.length > 0 ? transactions[0].version : 0
   )
 
-  const handleTabChange = (newTab) => {
-    const page = `/?tab=${newTab}${latest ? '' : `&start=${startVersion}`}`
+  const handleRouteChange = () => {
+    const query = {
+      ...(tab.current == 'dashboard' && {
+        ...(!latest && {start: `${start.current}`}),
+      }),
+      ...(tab.current == 'validators' && {
+        ...(sortOrder.current && sortOrder.current != 'descend' && { order: sortOrder.current}),
+        ...(sortKey.current && sortKey.current != 'voting_power' && { sort: sortKey.current})
+      })
+    }
+    const page = `/${tab.current == 'dashboard' ? '' : tab.current}${Object.keys(query).length > 0 ? `?${new URLSearchParams(query).toString()}` : ''}`
     window.history.pushState({}, null, page)
+    return page    
+  }
+
+  const handleTabChange = (newTab) => {
+    tab.current = newTab
+    const page = handleRouteChange()
     pageview(page, newTab)
   }
 
-  const getCurrentUpgradeConsensus = () => {
-    if (!vitals.chain_view.upgrade) return null
-    let totalVotingPower = 0
-    for (const validator of vitals.chain_view.validator_view) {
-      totalVotingPower += validator.voting_power
-    }
-    let totalWeight = 0
-    for (const vote of vitals.chain_view.upgrade.upgrade.votes) {
-    totalWeight += vote.weight
-    }
-   // const totalWeight = get(vitals, 'chain_view.upgrade.upgrade.consensus.total_weight')
-    const percentage = (100.0 * totalWeight / totalVotingPower)
-
-    return <span>{totalWeight}/{totalVotingPower} (<span style={{ color: percentage > (200.0/3.0) ? 'rgb(1 217 163)':'maroon' }}>{percentage.toFixed(2)}%</span>)</span>
+  const handleValidatorsSortChange = ({ order, columnKey }) => {
+    sortKey.current = columnKey
+    sortOrder.current = order
+    handleRouteChange()
   }
-
-  console.log({upgrade: vitals.chain_view.upgrade})
 
   return (
     <NavLayout>
@@ -273,6 +286,9 @@ const IndexPage = ({
             validators={vitals.chain_view.validator_view}
             validatorsMap={validatorsMap}
             blocksInEpoch={blocksInEpoch}
+            onSortChange={handleValidatorsSortChange}
+            defaultSortKey={defaultSortKey}
+            defaultSortOrder={defaultSortOrder}
           />
           <InactiveValidatorsTable
             top={<span style={{fontSize: 20}}>Inactive Validators ({inactiveValidators.length})</span>}
@@ -288,21 +304,9 @@ const IndexPage = ({
             <div className={classes.topStatsInner}>
               {get(vitals, 'chain_view.upgrade.upgrade.vote_counts[0].hash.length') ? (
                 <>
-                 {get(vitals, 'chain_view.upgrade.upgrade.consensus.hash') &&
+                 
                   <div className={classes.infoRow}>
-                    <Tooltip title="Hash of proposed stdlib binary">
-                      <span className={classes.infoText}>
-                        Hash:{' '}
-                        <span className={classes.thinText}>
-                          {vitals.chain_view.upgrade.upgrade.vote_counts[0].hash
-                            .map((x) => x.toString(16))
-                            .join('')}
-                        </span>
-                      </span>
-                    </Tooltip>
-                  </div>}
-                  <div className={classes.infoRow}>
-                    <Tooltip title="Number of validators that have voted with approval on this proposal">
+                    <Tooltip title="Number of validators that have voted on proposals during this voting window">
                       <span className={classes.infoText}>
                         Voters:{' '}
                         <span className={classes.thinText}>
@@ -323,16 +327,7 @@ const IndexPage = ({
                       </span>
                     </Tooltip>
                   </div>
-                  <div className={classes.infoRow}>
-                    <Tooltip title="Current consensus (voted voting power out of total validator voting power)">
-                      <span className={classes.infoText}>
-                        Consensus:{' '}
-                        <span className={classes.thinText}>
-                          {getCurrentUpgradeConsensus()}
-                        </span>
-                      </span>
-                    </Tooltip>
-                    </div>
+                  
                 </>
               ) : (
                 <div>No Active Upgrade Voting</div>
@@ -477,6 +472,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       validatorsMap,
       blocksInEpoch,
       initialTab: query.tab || 'dashboard',
+      defaultSortKey: query.sort || 'voting_power',
+      defaultSortOrder: query.order || 'descend',
       vals
     },
   }

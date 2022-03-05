@@ -281,7 +281,7 @@ const AddressPage = ({
             <div className={classes.proofHistoryTable}>
               <div className={classes.proofHistoryTitle}>
                 <h3 className={classes.proofHistoryLabel}>Tower Stats</h3>
-                <a href={`/proofs/${account.address}`} target="_blank">
+                <a href={`/api/proofs/${account.address}`} target="_blank">
                   <Button
                     className={classes.downloadProofsButton}
                     type="primary"

@@ -1,7 +1,7 @@
 const Router = require('@koa/router')
 const { getTowerState } = require('../lib/api/node')
 
-const router = new Router({prefix: '/tower'})
+const router = new Router({prefix: '/api/tower'})
 
 router.post('/inactive', async ctx => {
   const accounts = ctx.request.body

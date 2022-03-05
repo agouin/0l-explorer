@@ -3,7 +3,7 @@ const archiver = require('archiver')
 const { getAccountTransactions, getEvents, getTransactions } = require('../lib/api/node')
 const { get } = require('lodash')
 
-const router = new Router({ prefix: '/proofs' })
+const router = new Router({ prefix: '/api/proofs' })
 
 const iterateAllAccountTransactions = async (address, processFunction) => {
   let start = 0
