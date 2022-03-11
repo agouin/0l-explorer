@@ -29,12 +29,13 @@ import {
   getMinerProofHistory,
   getValidatorPermissionTree,
   getMinerPermissionTree,
-  getEpochsStats
+  getEpochsStats,
 } from '../../lib/api/permissionTree'
 
 import EventsTable from '../../components/eventsTable/eventsTable'
 import { pageview, event } from '../../lib/gtag'
 import CommunityWallets from '../../lib/communityWallets'
+import QRCode from 'react-qr-code'
 
 const fallbackCopyTextToClipboard = (text) => {
   var textArea = document.createElement('textarea')
@@ -151,63 +152,111 @@ const AddressPage = ({
               Address:{' '}
               <span className={classes.addressText}>{account.address}</span>
             </h1>
-            <h3
-              className={classes.balance}
-              onClick={copyTextToClipboard.bind(this, balance)}>
-              Balance:{' '}
-              <span className={classes.balanceText}>
-                {numberWithCommas(balance)}
-              </span>
-            </h3>
-            {type && (
-              <h1 className={classes.onboardedBy}>
-                Type: <span className={classes.addressText}>{type}</span>
-              </h1>
-            )}
-            {type === 'Validator' && (
-              <h1 className={classes.onboardedBy}>
-                In Active Validator Set:{' '}
-                <span className={classes.addressText}>
-                  {validatorAutoPayStats ? 'Yes' : 'No'}
-                </span>
-              </h1>
-            )}
-            {type === 'Community Wallet' && (
-              <>
-                <h1 className={classes.onboardedBy}>
-                  Name:{' '}
-                  <a
-                    href={CommunityWallets[account.address].link}
-                    target="_blank">
+            <div className={classes.qrContainer}>
+              <div>
+                <h3
+                  className={classes.balance}
+                  onClick={copyTextToClipboard.bind(this, balance)}>
+                  Balance:{' '}
+                  <span className={classes.balanceText}>
+                    {numberWithCommas(balance)}
+                  </span>
+                </h3>
+
+                {type && (
+                  <h1 className={classes.onboardedBy}>
+                    Type: <span className={classes.addressText}>{type}</span>
+                  </h1>
+                )}
+                {type === 'Validator' && (
+                  <h1 className={classes.onboardedBy}>
+                    In Active Validator Set:{' '}
                     <span className={classes.addressText}>
-                      {CommunityWallets[account.address].text}
+                      {validatorAutoPayStats ? 'Yes' : 'No'}
                     </span>
-                  </a>
-                </h1>
-              </>
-            )}
-            {validatorAutoPayStats && (
-              <>
-                <h1 className={classes.onboardedBy}>
-                  Votes in Epoch:{' '}
-                  <span className={classes.addressText}>
-                    {validatorAutoPayStats.vote_count_in_epoch}
-                  </span>
-                </h1>
-                <h1 className={classes.onboardedBy}>
-                  Props In Epoch:{' '}
-                  <span className={classes.addressText}>
-                    {validatorAutoPayStats.prop_count_in_epoch}
-                  </span>
-                </h1>
-                {/* <h1 className={classes.onboardedBy}>
+                  </h1>
+                )}
+                {type === 'Community Wallet' && (
+                  <>
+                    <h1 className={classes.onboardedBy}>
+                      Name:{' '}
+                      <a
+                        href={CommunityWallets[account.address].link}
+                        target="_blank">
+                        <span className={classes.addressText}>
+                          {CommunityWallets[account.address].text}
+                        </span>
+                      </a>
+                    </h1>
+                  </>
+                )}
+                {validatorAutoPayStats && (
+                  <>
+                    <h1 className={classes.onboardedBy}>
+                      Votes in Epoch:{' '}
+                      <span className={classes.addressText}>
+                        {validatorAutoPayStats.vote_count_in_epoch}
+                      </span>
+                    </h1>
+                    <h1 className={classes.onboardedBy}>
+                      Props In Epoch:{' '}
+                      <span className={classes.addressText}>
+                        {validatorAutoPayStats.prop_count_in_epoch}
+                      </span>
+                    </h1>
+                    {/* <h1 className={classes.onboardedBy}>
                   Full Node IP:{' '}
                   <span className={classes.addressText}>
                     {validatorAutoPayStats.full_node_ip}
                   </span>
                 </h1> */}
-              </>
-            )}
+                  </>
+                )}
+                {validatorEpochOnboarded !== null && (
+                  <h1 className={classes.onboardedBy}>
+                    {'Validator Epoch Onboarded: '}
+                    <span className={classes.addressText}>
+                      {validatorEpochOnboarded}
+                    </span>
+                  </h1>
+                )}
+                {validatorGeneration !== null && (
+                  <h1 className={classes.onboardedBy}>
+                    {'Validator Generation: '}
+                    <span className={classes.addressText}>
+                      {validatorGeneration}
+                    </span>
+                  </h1>
+                )}
+                {minerEpochOnboarded !== null &&
+                  validatorEpochOnboarded !== minerEpochOnboarded && (
+                    <h1 className={classes.onboardedBy}>
+                      {'Epoch Onboarded: '}
+                      <span className={classes.addressText}>
+                        {minerEpochOnboarded}
+                      </span>
+                    </h1>
+                  )}
+                {minerGeneration !== null &&
+                  minerGeneration !== validatorGeneration && (
+                    <h1 className={classes.onboardedBy}>
+                      {'Generation: '}
+                      <span className={classes.addressText}>
+                        {minerGeneration}
+                      </span>
+                    </h1>
+                  )}
+              </div>
+              <div className={classes.qrCode}>
+                <QRCode
+                  size={100}
+                  fgColor="#fff"
+                  bgColor="#003f34"
+                  value={`https://0lexplorer.io/address/${account.address}`}
+                />
+              </div>
+            </div>
+
             {onboardedBy && (
               <h1 className={classes.onboardedBy}>
                 Onboarded by:{' '}
@@ -242,38 +291,6 @@ const AddressPage = ({
                 </a>
               </h1>
             )}
-            {validatorEpochOnboarded !== null && (
-              <h1 className={classes.onboardedBy}>
-                {'Validator Epoch Onboarded: '}
-                <span className={classes.addressText}>
-                  {validatorEpochOnboarded}
-                </span>
-              </h1>
-            )}
-            {validatorGeneration !== null && (
-              <h1 className={classes.onboardedBy}>
-                {'Validator Generation: '}
-                <span className={classes.addressText}>
-                  {validatorGeneration}
-                </span>
-              </h1>
-            )}
-            {minerEpochOnboarded !== null &&
-              validatorEpochOnboarded !== minerEpochOnboarded && (
-                <h1 className={classes.onboardedBy}>
-                  {'Epoch Onboarded: '}
-                  <span className={classes.addressText}>
-                    {minerEpochOnboarded}
-                  </span>
-                </h1>
-              )}
-            {minerGeneration !== null &&
-              minerGeneration !== validatorGeneration && (
-                <h1 className={classes.onboardedBy}>
-                  {'Generation: '}
-                  <span className={classes.addressText}>{minerGeneration}</span>
-                </h1>
-              )}
           </div>
         </div>
         {towerState && (
@@ -486,9 +503,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     })
     if (nextSetOfEventsRes.status !== 200 || nextSetOfEventsRes.data.error)
       break
-    events.unshift(
-      ...nextSetOfEventsRes.data.result
-    )
+    events.unshift(...nextSetOfEventsRes.data.result)
     eventsCount = nextSetOfEventsRes.data.result.length
     start += eventsCount
   }
@@ -620,7 +635,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         .sort((a, b) => b.version - a.version)
         .map((tx) => {
           if (tx.events && tx.events.length) {
-            events.unshift(...tx.events.filter(event => event.data.type === 'sentpayment'))
+            events.unshift(
+              ...tx.events.filter((event) => event.data.type === 'sentpayment')
+            )
           }
           return getTransactionMin(tx)
         })
@@ -647,7 +664,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         .sort((a, b) => b.version - a.version)
         .map((tx) => {
           if (tx.events && tx.events.length) {
-            events.unshift(...tx.events.filter(event => event.data.type === 'sentpayment'))
+            events.unshift(
+              ...tx.events.filter((event) => event.data.type === 'sentpayment')
+            )
           }
           return getTransactionMin(tx)
         })
@@ -680,12 +699,27 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
     const epochsRes = await getEpochsStats()
     if (epochsRes.status === 200) {
-      const epochEventsRes = await Promise.all(epochsRes.data.map(epoch => getTransactions({ startVersion: epoch.height, limit: 2, includeEvents: true })))
+      const epochEventsRes = await Promise.all(
+        epochsRes.data.map((epoch) =>
+          getTransactions({
+            startVersion: epoch.height,
+            limit: 2,
+            includeEvents: true,
+          })
+        )
+      )
       for (const epochRes of epochEventsRes) {
         if (epochRes.status === 200) {
           for (const result of epochRes.data.result) {
             if (get(result, 'events.length')) {
-              events.unshift(...result.events.filter(event => event.data.type === 'sentpayment' && get(event, 'data.sender', '').toLowerCase() === lowercaseAddress))
+              events.unshift(
+                ...result.events.filter(
+                  (event) =>
+                    event.data.type === 'sentpayment' &&
+                    get(event, 'data.sender', '').toLowerCase() ===
+                      lowercaseAddress
+                )
+              )
             }
           }
         }
