@@ -9,7 +9,6 @@ import {
   StatsResponse,
   Event,
   EpochProofsResponse,
-  ValidatorPermissionTreeResponse,
   PermissionNodeValidator,
 } from '../lib/types/0l'
 import TransactionsTable from '../components/transactionsTable/transactionsTable'
@@ -49,7 +48,6 @@ interface IndexPageProps {
   allValidators: PermissionNodeValidator[]
   validatorsMap: Map<string, PermissionNodeValidator>
   inactiveValidators: PermissionNodeValidator[]
-  vals: any
   defaultSortKey: string
   defaultSortOrder: SortOrder
 }
@@ -67,7 +65,6 @@ const IndexPage = ({
   blocksInEpoch,
   validatorsMap,
   inactiveValidators,
-  vals,
   defaultSortKey,
   defaultSortOrder
 }: IndexPageProps) => {
@@ -80,8 +77,6 @@ const IndexPage = ({
   const tab = useRef(initialTab)
   const sortKey = useRef(defaultSortKey)
   const sortOrder = useRef(defaultSortOrder)
-
-  //console.log(JSON.stringify(vals.filter(val => val.reachable)))
 
   const handleGoToVersion = (search: string) => {
     if (!search) {
@@ -426,27 +421,16 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
   }
 
-  const inactiveValidators = allValidators.filter(validator => !vitals.chain_view.validator_view.find(activeVal => activeVal.account_address.toLowerCase() === validator.address.toLowerCase()))
-
   const validatorsMap = {}
+  const inactiveValidators = []
 
-  for (const validator of allValidators) {
-    validatorsMap[validator.address.toLowerCase()] = validator
+  if (allValidators && Array.isArray(allValidators)) {
+    inactiveValidators.push(...allValidators.filter(validator => !vitals.chain_view.validator_view.find(activeVal => activeVal.account_address.toLowerCase() === validator.address.toLowerCase())))
+
+    for (const validator of allValidators) {
+      validatorsMap[validator.address.toLowerCase()] = validator
+    }
   }
-
-  const vals = vitals.chain_view.validator_view.map(validator => ({ 
-    address: validator.account_address, ip:validator.full_node_ip.match(/\/ip4\/(.*?)\/tcp\/(\d+)\/.*/).splice(1,2), reachable: null
-  }))
-
-  // for (let i = 0; i < vals.length; i++) {
-  //   try {
-  //     execSync(`nc -zw5 ${vals[i].ip[0]} 8080`)
-  //     vals[i].reachable = true
-  //   } catch(err) {
-  //     vals[i].reachable = false
-  //     console.log('val not reachable',  vals[i])
-  //   }
-  // }
 
   let blocksInEpoch = 0
 
@@ -474,7 +458,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       initialTab: query.tab || 'dashboard',
       defaultSortKey: query.sort || 'voting_power',
       defaultSortOrder: query.order || 'descend',
-      vals
     },
   }
 }
