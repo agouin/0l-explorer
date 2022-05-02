@@ -1,4 +1,4 @@
-version: '3'
+version: '3.4'
 services:
   0l:
     build: .
@@ -7,8 +7,10 @@ services:
       - PORT=3027
       - NEXT_TELEMETRY_DISABLED=1
       - NODE_ENV=development
-      - NODE_HOSTNAME=35.231.138.89
-      - PERMISSION_TREE_API_URL=https://0l.interblockcha.in:444
+      - NODE_HOSTNAME=35.231.138.89 #needs to be genesis synced
+      - WEB_MONITOR_HOSTNAME=35.231.138.89
+      - PERMISSION_TREE_API_PRIVATE_URL=https://0l.interblockcha.in:444
+      - PERMISSION_TREE_API_PUBLIC_URL=https://0l.interblockcha.in:444
       - GA_MEASUREMENT_ID=G-Z8SZTHYB62
     ports:
       - "3027:3027"

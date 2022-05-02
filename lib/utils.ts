@@ -7,7 +7,7 @@ export const EPOCHS_BEFORE_VALIDATOR_INVITE = 14
 
 export const PROOFS_THRESHOLD = 7
 
-export const VALIDATOR_VOTES_PERCENT_THRESHOLD = 1
+export const VALIDATOR_VOTES_PERCENT_THRESHOLD = 5
 
 export const hasInvite = (epochs_since_last_account_creation) =>
   epochs_since_last_account_creation >= EPOCHS_BEFORE_VALIDATOR_INVITE

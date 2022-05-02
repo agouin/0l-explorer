@@ -1,5 +1,3 @@
-import getTypescriptAPI from '../types/api'
-import API from '../api/index'
 import { AxiosResponse } from 'axios'
 import {
   StatsResponse,
@@ -11,51 +9,58 @@ import {
   PermissionNodeValidator,
   EpochStatsResponse,
 } from '../types/0l'
-
-const { PERMISSION_TREE_API_URL } = process.env
-
-const PermissionTreeAPI = getTypescriptAPI(
-  new API(PERMISSION_TREE_API_URL, { 'Content-Type': 'application/json' })
-)
+import {
+  getStats as getStatsJS,
+  getValidatorPermissionTree as getValidatorPermissionTreeJS,
+  getValidators as getValidatorsJS,
+  getMinerPermissionTree as getMinerPermissionTreeJS,
+  getMinerProofHistory as getMinerProofHistoryJS,
+  getEpochStats as getEpochStatsJS,
+  getEpochsStats as getEpochsStatsJS,
+  getEpochProofSums as getEpochProofSumsJS,
+  getEpochProofSum as getEpochProofSumJS,
+  getEpochHistogram as getEpochHistogramJS,
+} from './permissionTree.js'
 
 export const getStats = async (): Promise<AxiosResponse<StatsResponse>> =>
-  await PermissionTreeAPI.GET('/permission-tree/stats')
+  getStatsJS()
 
 export const getValidatorPermissionTree = async (
   address: string
 ): Promise<AxiosResponse<ValidatorPermissionTreeResponse>> =>
-  await PermissionTreeAPI.GET(`/permission-tree/validator/${address}`)
+  getValidatorPermissionTreeJS(address)
 
 export const getValidators = async (): Promise<
   AxiosResponse<PermissionNodeValidator[]>
-> => await PermissionTreeAPI.GET('/permission-tree/validators')
+> => getValidatorsJS()
 
 export const getMinerPermissionTree = async (
   address: string
 ): Promise<AxiosResponse<MinerPermissionTreeResponse>> =>
-  await PermissionTreeAPI.GET(`/permission-tree/miner/${address}`)
+  getMinerPermissionTreeJS(address)
 
 export const getMinerProofHistory = async (
   address: string
 ): Promise<AxiosResponse<MinerEpochStatsResponse[]>> =>
-  await PermissionTreeAPI.GET(`/epochs/proofs/${address}`)
+  getMinerProofHistoryJS(address)
 
-export const getEpochStats = async (epoch : number): Promise<AxiosResponse<EpochStatsResponse>> => await PermissionTreeAPI.GET(`/epochs/${epoch}`)
+export const getEpochStats = async (
+  epoch: number
+): Promise<AxiosResponse<EpochStatsResponse>> => getEpochStatsJS(epoch)
 
-export const getEpochsStats = async (): Promise<AxiosResponse<EpochStatsResponse[]>> => await PermissionTreeAPI.GET(`/epochs`)
+export const getEpochsStats = async (): Promise<
+  AxiosResponse<EpochStatsResponse[]>
+> => getEpochsStatsJS()
 
 export const getEpochProofSums = async (): Promise<
   AxiosResponse<EpochProofsResponse[]>
-> => await PermissionTreeAPI.GET('/epochs/proofs/sum')
+> => getEpochProofSumsJS()
 
 export const getEpochProofSum = async (
   epoch: number
-): Promise<AxiosResponse<EpochProofsResponse[]>> =>
-  await PermissionTreeAPI.GET(`/epochs/proofs/sum/${epoch}`)
+): Promise<AxiosResponse<EpochProofsResponse[]>> => getEpochProofSumJS(epoch)
 
 export const getEpochHistogram = async (
   epoch: number
 ): Promise<AxiosResponse<EpochProofsHistogramResponse[]>> =>
-  await PermissionTreeAPI.GET(`/epochs/proofs/histogram/${epoch}`)
-
-export default PermissionTreeAPI
+  getEpochHistogramJS(epoch)

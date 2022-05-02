@@ -23,7 +23,7 @@ import {
 } from '../../lib/types/0l'
 import { get } from 'lodash'
 import TransactionsTable from '../../components/transactionsTable/transactionsTable'
-import { getVitals, numberWithCommas } from '../../lib/utils'
+import { numberWithCommas } from '../../lib/utils'
 import NotFoundPage from '../404'
 import {
   getMinerProofHistory,
@@ -36,6 +36,7 @@ import EventsTable from '../../components/eventsTable/eventsTable'
 import { pageview, event } from '../../lib/gtag'
 import CommunityWallets from '../../lib/communityWallets'
 import QRCode from 'react-qr-code'
+import API from '../../lib/api/local'
 
 const fallbackCopyTextToClipboard = (text) => {
   var textArea = document.createElement('textarea')
@@ -80,45 +81,243 @@ const copyTextToClipboard = async (text) => {
 
 interface AddressPageProps {
   account: Account
-  transactions: TransactionMin[]
-  events: Event[]
-  onboardedBy: string
-  operatorAccount: string
-  validatorAccountCreatedBy: string
   towerState: TowerState
-  proofHistory: MinerEpochStatsResponse[]
-  type: string
-  validatorAutoPayStats: ValidatorInfo
   errors: NodeRPCError[]
-  minerEpochOnboarded?: number
-  minerGeneration?: number
-  validatorEpochOnboarded?: number
-  validatorGeneration?: number
 }
 
-const AddressPage = ({
-  account,
-  transactions,
-  events,
-  onboardedBy,
-  operatorAccount,
-  validatorAccountCreatedBy,
-  towerState,
-  proofHistory,
-  type,
-  validatorAutoPayStats,
-  errors,
-  minerEpochOnboarded,
-  minerGeneration,
-  validatorEpochOnboarded,
-  validatorGeneration,
-}: AddressPageProps) => {
+const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
   if (!account) return NotFoundPage()
 
   const [pageSize, setPageSize] = useState(20)
 
+  const [transactions, setTransactions] = useState<TransactionMin[]>([])
+  const [events, setEvents] = useState<Event[]>([])
+  const [transactionsLoading, setTransactionsLoading] = useState<boolean>(true)
+  const [eventsLoading, setEventsLoading] = useState<boolean>(true)
+  const [onboardedBy, setOnboardedBy] = useState<string>('')
+  const [operatorAccount, setOperatorAccount] = useState<string>('')
+  const [validatorAccountCreatedBy, setValidatorAccountCreatedBy] = useState<
+    string
+  >('')
+  const [proofHistory, setProofHistory] = useState<MinerEpochStatsResponse[]>(
+    []
+  )
+  const [type, setType] = useState<string>('')
+  const [validatorAutoPayStats, setValidatorAutoPayStats] = useState<
+    ValidatorInfo
+  >(null)
+  const [minerEpochOnboarded, setMinerEpochOnboarded] = useState<number>(null)
+  const [minerGeneration, setMinerGeneration] = useState<number>(null)
+  const [validatorEpochOnboarded, setValidatorEpochOnboarded] = useState<
+    number
+  >(null)
+  const [validatorGeneration, setValidatorGeneration] = useState<number>(null)
+
+  const getTransactionsAndEvents = async (type: string, address: string) => {
+    const res = await API.GET('/proxy/node/transactions', { type, address })
+    if (res.status !== 200) {
+      message.error(
+        `Error fetching transactions (${res.status} - ${res.statusText})`
+      )
+      setTransactions([])
+      setTransactionsLoading(false)
+      setEvents([])
+      setEventsLoading(false)
+      return
+    }
+    const {
+      data: { transactions, events },
+    } = res
+    setTransactions(transactions)
+    setTransactionsLoading(false)
+    setEvents(events)
+    setEventsLoading(false)
+  }
+
+  const lazyLoad = async (lowercaseAddress) => {
+    const eventsKey = `0000000000000000${lowercaseAddress}`
+    const errors = []
+    const [
+      { data: eventsRes, status: eventsStatus },
+      { data: proofHistoryRes, status: proofHistoryStatus },
+      {
+        data: validatorPermissionTreeRes,
+        status: validatorPermissionTreeStatus,
+      },
+      { data: minerPermissionTreeRes, status: minerPermissionTreeStatus },
+    ] = await Promise.all([
+      getEvents({ key: eventsKey, start: 0, limit: 1000 }),
+      getMinerProofHistory(lowercaseAddress),
+      getValidatorPermissionTree(lowercaseAddress),
+      getMinerPermissionTree(lowercaseAddress),
+    ])
+    const nonZeroEvents = []
+    if (eventsRes) {
+      if (eventsRes.error) errors.push(eventsRes.error)
+      nonZeroEvents.push(
+        ...eventsRes.result.filter(
+          (event) => event.data.sender !== '00000000000000000000000000000000'
+        )
+      )
+    }
+
+    let onboardedBy = null,
+      validatorAccountCreatedBy = null,
+      operatorAccount = null
+
+    if (minerPermissionTreeStatus === 200 && minerPermissionTreeRes) {
+      if (
+        validatorPermissionTreeStatus === 404 ||
+        !validatorPermissionTreeRes ||
+        validatorPermissionTreeRes.parent !== minerPermissionTreeRes.parent
+      ) {
+        onboardedBy =
+          minerPermissionTreeRes.parent === '00000000000000000000000000000000'
+            ? 'Genesis'
+            : minerPermissionTreeRes.parent
+        setOnboardedBy(onboardedBy)
+      }
+      if (minerPermissionTreeRes.epoch_onboarded !== undefined) {
+        setMinerEpochOnboarded(minerPermissionTreeRes.epoch_onboarded)
+      }
+      if (minerPermissionTreeRes.generation !== undefined) {
+        setMinerGeneration(minerPermissionTreeRes.generation)
+      }
+    }
+
+    if (validatorPermissionTreeStatus === 200 && validatorPermissionTreeRes) {
+      validatorAccountCreatedBy = validatorPermissionTreeRes.parent
+      setValidatorAccountCreatedBy(validatorAccountCreatedBy)
+      if (validatorAccountCreatedBy === '00000000000000000000000000000000') {
+        onboardedBy = 'Genesis'
+        setOnboardedBy(onboardedBy)
+      }
+      if (validatorPermissionTreeRes.operator_address !== undefined) {
+        operatorAccount = validatorPermissionTreeRes.operator_address
+        setOperatorAccount(operatorAccount)
+      }
+      if (validatorPermissionTreeRes.epoch_onboarded !== undefined) {
+        setValidatorEpochOnboarded(validatorPermissionTreeRes.epoch_onboarded)
+      }
+      if (validatorPermissionTreeRes.generation !== undefined) {
+        setValidatorGeneration(validatorPermissionTreeRes.generation)
+      }
+    }
+
+    if (
+      minerPermissionTreeStatus === 404 ||
+      validatorPermissionTreeStatus === 404
+    ) {
+      const nonZeroEventTransactionsRes = await Promise.all(
+        nonZeroEvents.map((event) =>
+          getTransactions({
+            startVersion: event.transaction_version,
+            limit: 1,
+            includeEvents: true,
+          })
+        )
+      )
+
+      for (const transaction of nonZeroEventTransactionsRes) {
+        const sender = get(transaction, 'data.result[0].transaction.sender')
+        const functionName = get(
+          transaction,
+          'data.result[0].transaction.script.function_name'
+        )
+        if (functionName === 'create_acc_val') {
+          const events = get(transaction, 'data.result[0].events')
+          if (events && events.length > 0) {
+            const operatorCreateEvent = events.find(
+              (event) =>
+                get(event, 'data.type') === 'receivedpayment' &&
+                get(event, 'data.receiver') !== lowercaseAddress
+            )
+            if (operatorCreateEvent) {
+              operatorAccount =
+                get(operatorCreateEvent, 'data.receiver') || null
+              setOperatorAccount(operatorAccount)
+            }
+          }
+          validatorAccountCreatedBy = sender
+          setValidatorAccountCreatedBy(validatorAccountCreatedBy)
+        } else if (functionName === 'create_user_by_coin_tx')
+          onboardedBy = sender
+      }
+
+      if (!onboardedBy && !validatorAccountCreatedBy) {
+        onboardedBy = 'Genesis'
+        setOnboardedBy(onboardedBy)
+        const genesisBlock = await getTransactions({
+          startVersion: 0,
+          limit: 1,
+          includeEvents: true,
+        })
+        const genesisEvents = get(genesisBlock, 'data.result[0].events')
+        if (genesisEvents) {
+          const operatorCreateEvent = genesisEvents.find(
+            (event) => get(event, 'data.sender') === lowercaseAddress
+          )
+          if (operatorCreateEvent) {
+            validatorAccountCreatedBy = '00000000000000000000000000000000'
+            setValidatorAccountCreatedBy(validatorAccountCreatedBy)
+          }
+          operatorAccount = get(operatorCreateEvent, 'data.receiver') || null
+          setOperatorAccount(operatorAccount)
+        }
+      }
+    }
+
+    const type = validatorAccountCreatedBy
+      ? towerState
+        ? 'Validator'
+        : 'Operator'
+      : towerState
+      ? 'Miner'
+      : Object.keys(CommunityWallets).indexOf(lowercaseAddress) !== -1
+      ? 'Community Wallet'
+      : ''
+
+    getTransactionsAndEvents(type, lowercaseAddress)
+
+    if (operatorAccount) {
+      const operatorProofsRes = await getMinerProofHistory(
+        operatorAccount.toLowerCase()
+      )
+      if (operatorProofsRes.status === 200 && operatorProofsRes.data) {
+        if (!proofHistoryRes) setProofHistory(operatorProofsRes.data)
+        else {
+          const proofs = proofHistoryRes
+          for (const proof of operatorProofsRes.data) {
+            let index = proofs.findIndex(
+              (proofHistory) => proofHistory.epoch === proof.epoch
+            )
+            if (index !== -1) proofs[index].count += proof.count
+            else proofs.push(proof)
+          }
+          proofs.sort((a, b) => b.epoch - a.epoch)
+          setProofHistory(proofs)
+        }
+      }
+    } else if (proofHistoryRes) {
+      setProofHistory(proofHistoryRes)
+    }
+
+    if (type === 'Validator') {
+      const { data: vitals } = await API.GET('/webmonitor/vitals')
+      const validatorAutoPayStats = vitals.chain_view.validator_view.find(
+        (validator) =>
+          validator.account_address.toLowerCase() === lowercaseAddress
+      )
+      setValidatorAutoPayStats(validatorAutoPayStats)
+    }
+    setType(type)
+  }
+
   useEffect(() => {
     pageview('/address', 'address')
+    if (account && account.address) {
+      lazyLoad(account.address.toLowerCase())
+    }
     if (errors.length > 0) {
       console.error(errors)
       for (const error of errors) {
@@ -411,6 +610,7 @@ const AddressPage = ({
         <Col xs={24} sm={24} md={24} lg={13}>
           <TransactionsTable
             transactions={transactions}
+            loading={transactionsLoading}
             pagination={{ pageSize, onChange: onPaginationChange }}
             top={
               <div>
@@ -437,6 +637,7 @@ const AddressPage = ({
               </div>
             }
             events={events}
+            loading={eventsLoading}
           />
         </Col>
       </Row>
@@ -446,310 +647,26 @@ const AddressPage = ({
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { address } = ctx.params
-  console.log('Fetching account', address)
   const addressSingle = Array.isArray(address) ? address[0] : address
-  const lowercaseAddress = addressSingle.toLowerCase()
-  const eventsKey = `0000000000000000${addressSingle}`
-  const [
-    { data: accountsRes, status: accountsStatus },
-    { data: transactionsRes, status: transactionsStatus },
-    { data: towerRes, status: towerStatus },
-    { data: eventsRes, status: eventsStatus },
-    { data: proofHistoryRes, status: proofHistoryStatus },
-    { data: validatorPermissionTreeRes, status: validatorPermissionTreeStatus },
-    { data: minerPermissionTreeRes, status: minerPermissionTreeStatus },
-  ] = await Promise.all([
+  const [{ data: accountsRes }, { data: towerRes }] = await Promise.all([
     getAccount({ account: addressSingle }),
-    getAccountTransactions({
-      account: addressSingle,
-      start: 0,
-      limit: 1000,
-      includeEvents: true,
-    }),
     getTowerState({ account: addressSingle }),
-    getEvents({ key: eventsKey, start: 0, limit: 1000 }),
-    getMinerProofHistory(lowercaseAddress),
-    getValidatorPermissionTree(lowercaseAddress),
-    getMinerPermissionTree(lowercaseAddress),
   ])
 
   const errors = []
-  if (accountsRes.error) errors.push(accountsRes.error)
-  if (transactionsRes.error) errors.push(transactionsRes.error)
-  //if (towerRes.error) errors.push(towerRes.error)
-  if (eventsRes.error) errors.push(eventsRes.error)
 
-  const nonZeroEvents = eventsRes.result.filter(
-    (event) => event.data.sender !== '00000000000000000000000000000000'
-  )
-
-  const events = []
-  let eventsCount = 0
-  if (eventsStatus === 200 && !eventsRes.error) {
-    events.unshift(
-      ...eventsRes.result.sort(
-        (a, b) => b.transaction_version - a.transaction_version
-      )
-    )
-    eventsCount = eventsRes.result.length
-  }
-
-  let start = eventsCount
-  while (eventsCount === 1000) {
-    const nextSetOfEventsRes = await getEvents({
-      key: eventsKey,
-      start,
-      limit: 1000,
-    })
-    if (nextSetOfEventsRes.status !== 200 || nextSetOfEventsRes.data.error)
-      break
-    events.unshift(...nextSetOfEventsRes.data.result)
-    eventsCount = nextSetOfEventsRes.data.result.length
-    start += eventsCount
-  }
-
-  let onboardedBy = null,
-    validatorAccountCreatedBy = null,
-    operatorAccount = null,
-    minerEpochOnboarded = null,
-    minerGeneration = null,
-    validatorEpochOnboarded = null,
-    validatorGeneration = null
-
-  if (minerPermissionTreeStatus === 200 && minerPermissionTreeRes) {
-    if (
-      validatorPermissionTreeStatus === 404 ||
-      !validatorPermissionTreeRes ||
-      validatorPermissionTreeRes.parent !== minerPermissionTreeRes.parent
-    )
-      onboardedBy =
-        minerPermissionTreeRes.parent === '00000000000000000000000000000000'
-          ? 'Genesis'
-          : minerPermissionTreeRes.parent
-    if (minerPermissionTreeRes.epoch_onboarded !== undefined)
-      minerEpochOnboarded = minerPermissionTreeRes.epoch_onboarded
-    if (minerPermissionTreeRes.generation !== undefined)
-      minerGeneration = minerPermissionTreeRes.generation
-  }
-
-  if (validatorPermissionTreeStatus === 200 && validatorPermissionTreeRes) {
-    validatorAccountCreatedBy = validatorPermissionTreeRes.parent
-    if (validatorAccountCreatedBy === '00000000000000000000000000000000')
-      onboardedBy = 'Genesis'
-    if (validatorPermissionTreeRes.operator_address !== undefined)
-      operatorAccount = validatorPermissionTreeRes.operator_address
-    if (validatorPermissionTreeRes.epoch_onboarded !== undefined)
-      validatorEpochOnboarded = validatorPermissionTreeRes.epoch_onboarded
-    if (validatorPermissionTreeRes.generation !== undefined)
-      validatorGeneration = validatorPermissionTreeRes.generation
-  }
-
-  if (
-    minerPermissionTreeStatus === 404 ||
-    validatorPermissionTreeStatus === 404
-  ) {
-    const nonZeroEventTransactionsRes = await Promise.all(
-      nonZeroEvents.map((event) =>
-        getTransactions({
-          startVersion: event.transaction_version,
-          limit: 1,
-          includeEvents: true,
-        })
-      )
-    )
-
-    for (const transaction of nonZeroEventTransactionsRes) {
-      const sender = get(transaction, 'data.result[0].transaction.sender')
-      const functionName = get(
-        transaction,
-        'data.result[0].transaction.script.function_name'
-      )
-      if (functionName === 'create_acc_val') {
-        const events = get(transaction, 'data.result[0].events')
-        if (events && events.length > 0) {
-          const operatorCreateEvent = events.find(
-            (event) =>
-              get(event, 'data.type') === 'receivedpayment' &&
-              get(event, 'data.receiver') !== lowercaseAddress
-          )
-          if (operatorCreateEvent) {
-            operatorAccount = get(operatorCreateEvent, 'data.receiver') || null
-          }
-        }
-        validatorAccountCreatedBy = sender
-      } else if (functionName === 'create_user_by_coin_tx') onboardedBy = sender
-    }
-
-    if (!onboardedBy && !validatorAccountCreatedBy) {
-      onboardedBy = 'Genesis'
-      const genesisBlock = await getTransactions({
-        startVersion: 0,
-        limit: 1,
-        includeEvents: true,
-      })
-      const genesisEvents = get(genesisBlock, 'data.result[0].events')
-      if (genesisEvents) {
-        const operatorCreateEvent = genesisEvents.find(
-          (event) => get(event, 'data.sender') === lowercaseAddress
-        )
-        if (operatorCreateEvent)
-          validatorAccountCreatedBy = '00000000000000000000000000000000'
-        operatorAccount = get(operatorCreateEvent, 'data.receiver') || null
-      }
-    }
-  } else {
-    console.log('got everything we need from permission tree API')
-  }
-
-  if (!accountsRes.result) ctx.res.statusCode = 404
-
-  let proofs: MinerEpochStatsResponse[] = []
-
-  if (operatorAccount) {
-    const operatorProofsRes = await getMinerProofHistory(
-      operatorAccount.toLowerCase()
-    )
-    if (operatorProofsRes.status === 200 && operatorProofsRes.data) {
-      if (!proofHistoryRes) proofs = operatorProofsRes.data
-      else {
-        proofs = proofHistoryRes
-        for (const proof of operatorProofsRes.data) {
-          let index = proofs.findIndex(
-            (proofHistory) => proofHistory.epoch === proof.epoch
-          )
-          if (index !== -1) proofs[index].count += proof.count
-          else proofs.push(proof)
-        }
-        proofs.sort((a, b) => b.epoch - a.epoch)
-      }
-    }
-  } else if (proofHistoryRes) {
-    proofs = proofHistoryRes
-  }
-
-  const transactions: TransactionMin[] = []
-  let transactionsCount = 0
-  if (transactionsStatus === 200 && !transactionsRes.error) {
-    transactions.unshift(
-      ...transactionsRes.result
-        .sort((a, b) => b.version - a.version)
-        .map((tx) => {
-          if (tx.events && tx.events.length) {
-            events.unshift(
-              ...tx.events.filter((event) => event.data.type === 'sentpayment')
-            )
-          }
-          return getTransactionMin(tx)
-        })
-    )
-    transactionsCount = transactionsRes.result.length
-  }
-
-  let startTx = transactionsCount
-
-  while (transactionsCount === 1000) {
-    const nextSetOfTransactionsRes = await getAccountTransactions({
-      account: addressSingle,
-      start: startTx,
-      limit: 1000,
-      includeEvents: true,
-    })
-    if (
-      nextSetOfTransactionsRes.status !== 200 ||
-      nextSetOfTransactionsRes.data.error
-    )
-      break
-    transactions.unshift(
-      ...nextSetOfTransactionsRes.data.result
-        .sort((a, b) => b.version - a.version)
-        .map((tx) => {
-          if (tx.events && tx.events.length) {
-            events.unshift(
-              ...tx.events.filter((event) => event.data.type === 'sentpayment')
-            )
-          }
-          return getTransactionMin(tx)
-        })
-    )
-    transactionsCount = nextSetOfTransactionsRes.data.result.length
-    startTx += transactionsCount
+  if (accountsRes) {
+    if (accountsRes.error) errors.push(accountsRes.error)
+    if (!accountsRes.result) ctx.res.statusCode = 404
   }
 
   const account: Account = accountsRes.result || null
   const towerState: TowerState = towerRes.result || null
 
-  const type = validatorAccountCreatedBy
-    ? towerState
-      ? 'Validator'
-      : 'Operator'
-    : towerState
-    ? 'Miner'
-    : Object.keys(CommunityWallets).indexOf(lowercaseAddress) !== -1
-    ? 'Community Wallet'
-    : ''
-
-  let validatorAutoPayStats: ValidatorInfo = null
-  if (type === 'Validator') {
-    const vitals = await getVitals()
-    validatorAutoPayStats =
-      vitals.chain_view.validator_view.find(
-        (validator) =>
-          validator.account_address.toLowerCase() === lowercaseAddress
-      ) || null
-
-    const epochsRes = await getEpochsStats()
-    if (epochsRes.status === 200) {
-      const epochEventsRes = await Promise.all(
-        epochsRes.data.map((epoch) =>
-          getTransactions({
-            startVersion: epoch.height,
-            limit: 2,
-            includeEvents: true,
-          })
-        )
-      )
-      for (const epochRes of epochEventsRes) {
-        if (epochRes.status === 200) {
-          for (const result of epochRes.data.result) {
-            if (get(result, 'events.length')) {
-              events.unshift(
-                ...result.events.filter(
-                  (event) =>
-                    event.data.type === 'sentpayment' &&
-                    get(event, 'data.sender', '').toLowerCase() ===
-                      lowercaseAddress
-                )
-              )
-            }
-          }
-        }
-      }
-    }
-  }
-
   return {
     props: {
       account,
-      transactions,
-      onboardedBy,
-      operatorAccount,
-      validatorAccountCreatedBy,
-      proofHistory:
-        towerState && towerState.actual_count_proofs_in_epoch > 0
-          ? proofs.filter(
-              (proof) => proof.epoch != towerState.latest_epoch_mining
-            )
-          : proofs,
-      events: events.sort(
-        (a, b) => b.transaction_version - a.transaction_version
-      ),
       towerState,
-      type,
-      validatorAutoPayStats,
-      minerEpochOnboarded,
-      minerGeneration,
-      validatorEpochOnboarded,
-      validatorGeneration,
       errors,
     },
   }

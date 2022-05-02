@@ -10,6 +10,7 @@ interface TransactionTableProps {
   top?: ReactNode | undefined
   bottom?: ReactNode | undefined
   pagination: TablePaginationConfig | false
+  loading?: boolean | false
 }
 
 const getStateIcon = (status) => {
@@ -73,12 +74,14 @@ const TransactionsTable = ({
   pagination,
   top,
   bottom,
+  loading,
 }: TransactionTableProps) => {
   return (
     <div className={classes.tableContainer}>
       <div className={classes.inner}>
         {top}
         <Table
+          loading={loading}
           rowKey="version"
           scroll={{ x: true }}
           columns={TransactionColumns}

@@ -6,6 +6,8 @@ const http = require('http')
 const proofsRouter = require('./routers/proofs')
 const epochsRouter = require('./routers/epochs')
 const towerRouter = require('./routers/tower')
+const nodeProxy = require('./routers/nodeProxy')
+const webmonitorProxy = require('./routers/webMonitor')
 
 const { NODE_ENV, PORT: ENV_PORT } = process.env
 const PORT = ENV_PORT || 3027
@@ -20,11 +22,17 @@ next.prepare()
 
 const router = new Router()
 
+router.get('/health', async (ctx) => {
+  ctx.body = 'OK'
+})
+
 router.get('/(.*)', async (ctx) => {
   await handler(ctx.req, ctx.res)
   ctx.respond = false
 })
 
+app.use(nodeProxy.routes())
+app.use(webmonitorProxy.routes())
 app.use(epochsRouter.routes())
 app.use(proofsRouter.routes())
 app.use(towerRouter.routes())

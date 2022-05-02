@@ -28,6 +28,7 @@ import { get } from 'lodash'
 import { execSync } from 'child_process'
 import InactiveValidatorsTable from '../components/inactiveValidatorsTable/inactiveValidatorsTable'
 import { SortOrder } from 'antd/lib/table/interface'
+import ErrorPage from './_error'
 
 const { TabPane } = Tabs
 
@@ -35,6 +36,7 @@ const MIN_VERSION = 0
 const TX_PER_PAGE = 20
 
 interface IndexPageProps {
+  error: boolean
   transactions: TransactionMin[]
   events: Event[]
   startVersion: number
@@ -53,6 +55,7 @@ interface IndexPageProps {
 }
 
 const IndexPage = ({
+  error,
   transactions,
   events,
   latest,
@@ -68,6 +71,9 @@ const IndexPage = ({
   defaultSortKey,
   defaultSortOrder
 }: IndexPageProps) => {
+  if (error) {
+    return <ErrorPage><div style={{backgroundColor: 'maroon', margin: -16, paddingLeft: 16}}><h4 style={{color:"white"}}>0L network is undergoing maintenance</h4></div></ErrorPage>
+  }
   useEffect(() => {
     const page = `/?tab=${initialTab}${latest ? '' : `&start=${startVersion}`}`
     pageview(page, initialTab)
@@ -277,7 +283,7 @@ const IndexPage = ({
         </TabPane>
         <TabPane key="validators" tab="Validators">
           <ValidatorsTable
-            top={<span style={{fontSize: 20}}>Active Validator Set ({vitals.chain_view.validator_count})</span>}
+            top={<span style={{fontSize: 20}}>Active Validator Set ({vitals.chain_view.validator_view.length})</span>}
             validators={vitals.chain_view.validator_view}
             validatorsMap={validatorsMap}
             blocksInEpoch={blocksInEpoch}
@@ -345,6 +351,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     startVersion = parseInt(query.start as string)
   }
 
+  try {
   const [
     { data: metadataRes, status: metadataStatus },
     vitals,
@@ -381,15 +388,15 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     })
 
   const transactions: TransactionMin[] =
-    transactionsStatus === 200
+    transactionsStatus === 200 && transactionsRes.result
       ? transactionsRes.result
           .sort((a, b) => b.version - a.version)
           .map((tx) => getTransactionMin(tx))
-      : null
+      : []
 
   const events = []
 
-  if (transactions) {
+  if (transactions && transactions.length && transactionsRes.result) {
     for (const transaction of transactionsRes.result) {
       events.push(...transaction.events)
     }
@@ -443,6 +450,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   return {
     props: {
+      error: false,
       transactions,
       events,
       startVersion,
@@ -459,6 +467,28 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       defaultSortKey: query.sort || 'voting_power',
       defaultSortOrder: query.order || 'descend',
     },
+  }
+  } catch(err) {
+    return {
+      props: {
+        error: true,
+        transactions: [],
+        events: [],
+        startVersion: -1,
+        latest: true,
+        previousIsLatest: false,
+        vitals: {chain_view: { height: 0, epoch_progress: 0, validator_count: 0, epoch: 0, total_supply: 0, validator_view: []}},
+        stats: {},
+        epochMinerStats: {},
+        allValidators: [],
+        inactiveValidators: [],
+        validatorsMap: {},
+        blocksInEpoch: 0,
+        initialTab: query.tab || 'dashboard',
+        defaultSortKey: query.sort || 'voting_power',
+        defaultSortOrder: query.order || 'descend',
+      },
+    }
   }
 }
 

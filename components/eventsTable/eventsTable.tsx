@@ -9,6 +9,7 @@ interface EventsTableProps {
   events: Event[]
   top?: ReactNode | undefined
   bottom?: ReactNode | undefined
+  loading?: boolean | false
 }
 
 const EventTypes = {
@@ -72,7 +73,7 @@ const EventColumns = [
   },
 ]
 
-const EventsTable = ({ events, top, bottom }: EventsTableProps) => {
+const EventsTable = ({ events, top, bottom, loading }: EventsTableProps) => {
   const [pageSize, setPageSize] = useState(20)
   const onPageChange = (newPage, newPageSize) => setPageSize(newPageSize)
   return (
@@ -80,6 +81,7 @@ const EventsTable = ({ events, top, bottom }: EventsTableProps) => {
     <div className={classes.inner}>
       {top}
       <Table
+        loading={loading}
         rowKey={(row) =>  `${row.transaction_version}_${row.sequence_number}_${row.key}`}
         scroll={{ x: true }}
         columns={EventColumns}
