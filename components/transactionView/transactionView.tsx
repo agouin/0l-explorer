@@ -1,4 +1,5 @@
 import { Transaction } from '../../lib/types/0l'
+import { getTimestamp } from '../../lib/node_utils'
 import { get } from 'lodash'
 import { Table } from 'antd'
 import { ReactNode } from 'react'
@@ -79,7 +80,7 @@ const TransactionView = ({
     info.push({
       key: 'sender',
       title: 'Sender',
-      value: <a href={`/address/${sender}`}>{sender}</a>,
+      value: <a href={`/address/${sender}`}>{sender ? sender.toUpperCase() : ''}</a>,
     })
 
   switch (tx.type) {
@@ -91,13 +92,22 @@ const TransactionView = ({
       })
       break
     case 'user':
+  
       const script_function = get(tx, 'script.function_name')
-      if (script_function)
+      
+      if (script_function) {
+        info.unshift({
+          key: 'timestamp_usecs',
+          title: 'Timestamp',
+          value: new Date(getTimestamp(tx.expiration_timestamp_secs, script_function) / 1000).toLocaleString(),
+        })
         info.push({
           key: 'script_function',
           title: 'Script Function',
           value: script_function,
         })
+        
+      }
 
       if (script_function === 'create_user_by_coin_tx') {
         const onboard_address = get(tx, 'script.arguments_bcs[0]')

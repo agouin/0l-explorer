@@ -4,20 +4,14 @@ import classes from './inactiveValidatorsTable.module.scss'
 import { ReactNode, useEffect, useState } from 'react'
 import { Sorter, PROOFS_THRESHOLD } from '../../lib/utils'
 import { get } from 'lodash'
-import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons'
 import API from '../../lib/api/local'
+import BoolIcon from '../boolIcon/boolIcon'
 
 interface InactiveValidatorsTableProps {
   validators: PermissionNodeValidator[]
   validatorsMap: Map<string, PermissionNodeValidator>
   top?: ReactNode | undefined
   bottom?: ReactNode | undefined
-}
-
-export const getBoolIcon = (condition) => {
-  if (condition)
-    return <CheckCircleFilled style={{ color: '#007054', marginLeft: 8 }} />
-  return <CloseCircleFilled style={{ color: 'maroon', marginLeft: 8 }} />
 }
 
 const InactiveValidatorsTable = ({
@@ -46,7 +40,7 @@ const InactiveValidatorsTable = ({
       dataIndex: 'address',
       width: 300,
       title: 'Account',
-      render: (text) => <a href={`/address/${text}`}>{text.toLowerCase()}</a>,
+      render: (text) => <a href={`/address/${text}`}>{text.toUpperCase()}</a>,
     },
     {
       key: 'count_proofs_in_epoch',
@@ -63,8 +57,8 @@ const InactiveValidatorsTable = ({
         return (
           <Tooltip title={metThreshold ? `Submitted more than the threshold of ${PROOFS_THRESHOLD} proofs in the current epoch. Will be able to enter the active validator set at the start of the next epoch`: `Must submit ${PROOFS_THRESHOLD - count_proofs_in_epoch + 1} more proof${PROOFS_THRESHOLD - count_proofs_in_epoch == 0 ? '' : 's'} in the current epoch to be able to enter the active validator set in the next epoch`}>
         <span>
+          <BoolIcon condition={metThreshold}/>
           {count_proofs_in_epoch}
-          {getBoolIcon(metThreshold)}
         </span>
         </Tooltip>
       )}

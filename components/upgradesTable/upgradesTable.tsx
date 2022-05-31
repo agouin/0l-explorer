@@ -28,7 +28,7 @@ const UpgradesTable = ({ vitals, top, bottom }: UpgradesTableProps) => {
         {totalWeight}/{totalVotingPower} (
         <span
           style={{
-            color: percentage > 200.0 / 3.0 ? 'rgb(1 217 163)' : 'maroon',
+            color: percentage > 200.0 / 3.0 ? '#449800' : '#b10101',
           }}>
           {percentage.toFixed(2)}%
         </span>
@@ -46,7 +46,6 @@ const UpgradesTable = ({ vitals, top, bottom }: UpgradesTableProps) => {
             return isEqual(vote.data, proposal.hash)
           }
         )
-        console.log({ votingVals })
         return (
           <div className={classes.proposal}>
             <div className={classes.topStats}>

@@ -1,9 +1,9 @@
 import { Table, TablePaginationConfig } from 'antd'
 import { TransactionMin } from '../../lib/types/0l'
 import { capitalCase } from 'change-case'
-import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons'
 import classes from './transactionsTable.module.scss'
 import { ReactNode } from 'react'
+import BoolIcon from '../boolIcon/boolIcon'
 
 interface TransactionTableProps {
   transactions: TransactionMin[]
@@ -11,12 +11,6 @@ interface TransactionTableProps {
   bottom?: ReactNode | undefined
   pagination: TablePaginationConfig | false
   loading?: boolean | false
-}
-
-const getStateIcon = (status) => {
-  if (status === 'executed')
-    return <CheckCircleFilled style={{ color: '#007054', marginLeft: 8 }} />
-  return <CloseCircleFilled style={{ color: 'maroon', marginLeft: 8 }} />
 }
 
 const TransactionColumns = [
@@ -47,9 +41,9 @@ const TransactionColumns = [
     dataIndex: 'status',
     width: 150,
     render: (text) => (
-      <div>
+      <div className={classes.txStatus}>
+        <BoolIcon condition={text === 'executed'}/>
         <span>{capitalCase(text)}</span>
-        {getStateIcon(text)}
       </div>
     ),
   },
@@ -58,14 +52,14 @@ const TransactionColumns = [
     dataIndex: 'sender',
     title: 'Sender',
     width: 300,
-    render: (text) => <a href={`/address/${text}`}>{text}</a>,
+    render: (text) => <a href={`/address/${text}`}>{text ? text.toUpperCase(): ''}</a>,
   },
   {
     key: 'recipient',
     dataIndex: 'recipient',
     title: 'Recipient',
     width: 300,
-    render: (text) => <a href={`/address/${text}`}>{text}</a>,
+    render: (text) => <a href={`/address/${text}`}>{text ? text.toUpperCase(): ''}</a>,
   },
 ]
 

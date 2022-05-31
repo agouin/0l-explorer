@@ -9,13 +9,13 @@ const DonatePage = () => {
   })
   return (
     <NavLayout hideFooter>
-      <h1 style={{ color: 'white' }}>Donation</h1>
+      <h1 >Donation</h1>
 
       <List
         style={{ maxWidth: 700 }}
         bordered
         header={
-          <h3 style={{ color: 'white' }}>
+          <h3>
             If you would like to contribute to this project financially, please
             send to one of the following addresses:
           </h3>
@@ -26,7 +26,7 @@ const DonatePage = () => {
         ]}
         renderItem={(item, i) => (
           <List.Item>
-            <span style={{ color: 'white' }} key={`donation_${i}`}>
+            <span key={`donation_${i}`}>
               {item}
             </span>
           </List.Item>

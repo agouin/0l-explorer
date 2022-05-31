@@ -66,7 +66,7 @@ const EpochPage = ({ epoch, proofStats, proofHistogram }: EpochPageProps) => {
                   ...proofHistogram.map((point) => [
                     point.proofs,
                     point.count,
-                    point.proofs <= 7 ? 'maroon' : '#007054',
+                    point.proofs <= 7 ?  '#b10101': '#449800',
                   ]),
                 ]}
                 options={{

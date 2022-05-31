@@ -22,7 +22,7 @@ const AutoPayTable = ({ validators, top, bottom }: AutoPayTableProps) => {
       width: 260,
       title: 'Address',
       render: (_, { address }: AddressRecord) => (
-        <a href={`/address/${address}`}>{address}</a>
+        <a href={`/address/${address}`}>{address ? address.toUpperCase() : ''}</a>
       ),
     },
     {
@@ -61,7 +61,7 @@ const AutoPayTable = ({ validators, top, bottom }: AutoPayTableProps) => {
                 {participatingValidators.map((validatorAddress) => (
                   <div key={`part_vals_${address}_${validatorAddress}`}>
                     <a href={`/address/${validatorAddress}`}>
-                      {validatorAddress.toLowerCase()}
+                      {validatorAddress.toUpperCase()}
                     </a>
                   </div>
                 ))}

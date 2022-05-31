@@ -40,6 +40,8 @@ spec:
           value: $PERMISSION_TREE_API_PUBLIC_URL$
         - name: GA_MEASUREMENT_ID
           value: $GA_MEASUREMENT_ID$
+        - name: VALIDATOR_DIEM_PROMETHEUS_HOST
+          value: $VALIDATOR_DIEM_PROMETHEUS_HOST$
         image: $CONTAINER_IMAGE$
         ports:
         - containerPort: 3027

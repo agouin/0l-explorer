@@ -9,9 +9,10 @@ import {
   PROOFS_THRESHOLD,
   VALIDATOR_VOTES_PERCENT_THRESHOLD,
 } from '../../lib/utils'
-import { CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons'
 import { get } from 'lodash'
 import { SortOrder } from 'antd/lib/table/interface'
+import communityWallets from '../../lib/communityWallets'
+import BoolIcon from '../boolIcon/boolIcon'
 
 interface ValidatorsTableProps {
   validators: ValidatorInfo[]
@@ -22,12 +23,6 @@ interface ValidatorsTableProps {
   onSortChange: ({order, field, columnKey})=>void
   defaultSortKey: string
   defaultSortOrder: SortOrder
-}
-
-export const getBoolIcon = (condition) => {
-  if (condition)
-    return <CheckCircleFilled style={{ color: '#007054', marginLeft: 8 }} />
-  return <CloseCircleFilled style={{ color: 'maroon', marginLeft: 8 }} />
 }
 
 const ValidatorsTable = ({
@@ -52,7 +47,7 @@ const ValidatorsTable = ({
       defaultSortOrder: getDefaultSortOrder('account_address'),
       width: 300,
       title: 'Account',
-      render: (text) => <a href={`/address/${text}`}>{text.toLowerCase()}</a>,
+      render: (text) => <a href={`/address/${text}`}>{text.toUpperCase()}</a>,
     },
     {
       key: 'voting_power',
@@ -84,8 +79,8 @@ const ValidatorsTable = ({
                   } in the current epoch to stay in the active validator set`
             }>
             <span>
+              <BoolIcon condition={metThreshold} />
               {count_proofs_in_epoch}
-              {getBoolIcon(metThreshold)}
             </span>
           </Tooltip>
         )
@@ -114,12 +109,12 @@ const ValidatorsTable = ({
           <Tooltip
             title={
               hasMetVotesThreshold
-                ? `Signed at least ${VALIDATOR_VOTES_PERCENT_THRESHOLD}% of blocks in the current epoch`
-                : `Has not signed at least ${VALIDATOR_VOTES_PERCENT_THRESHOLD}% of blocks in the current epoch`
+                ? `Signed at least ${VALIDATOR_VOTES_PERCENT_THRESHOLD}% of rounds in the current epoch`
+                : `Has not signed at least ${VALIDATOR_VOTES_PERCENT_THRESHOLD}% of rounds in the current epoch`
             }>
             <span>
+            <BoolIcon condition={hasMetVotesThreshold}/>
               {vote_count_in_epoch}
-              {getBoolIcon(hasMetVotesThreshold)}
             </span>
           </Tooltip>
         )
@@ -146,9 +141,29 @@ const ValidatorsTable = ({
         const autoPaySum = get(record, 'autopay.recurring_sum', 0)
         const hasAutoPay = autoPaySum > 0
         
-        return <Tooltip title={`Auto Pay is${hasAutoPay ? '': ' not'} configured to the Community Wallets` }><span>
+        return <Tooltip overlayStyle={{ maxWidth: 500, maxHeight: 500, overflowY: 'auto' }} title={hasAutoPay ? <Table
+          size="small"
+          rowKey="payee"
+          columns={[
+            {
+              title: 'Community Wallet',
+              dataIndex: 'payee',
+              render: (address) => (
+                <a href={`/address/${address}`}>{communityWallets[address] ? communityWallets[address].text : address ? address.toUpperCase() : ''}</a>
+              ),
+            },
+            { title: 'Amount', dataIndex: 'amount' },
+            { title: 'End Epoch', dataIndex: 'end_epoch' },
+          ]}
+          dataSource={record.autopay.payments}
+          pagination={{
+            pageSize: 5,
+            showSizeChanger: false,
+            showQuickJumper: false,
+            showPrevNextJumpers: true,
+          }}
+        /> : 'No Autopay Configured'}><span>
           {autoPaySum / 100 + '%'}
-          {getBoolIcon(hasAutoPay)}
           </span></Tooltip> 
       },
     },

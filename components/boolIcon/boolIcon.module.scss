@@ -1,0 +1,17 @@
+.boolIcon {
+  width: 12px;
+  height: 12px;
+  margin-right: 8px;
+  border-radius: 6px;
+  display: inline-flex;
+}
+
+.boolIconTrue {
+  @extend .boolIcon;
+  background-color: #449800;
+}
+
+.boolIconFalse {
+  @extend .boolIcon;
+  background-color: #b10101;
+}

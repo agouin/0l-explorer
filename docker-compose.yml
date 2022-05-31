@@ -12,6 +12,7 @@ services:
       - PERMISSION_TREE_API_PRIVATE_URL=https://0l.interblockcha.in:444
       - PERMISSION_TREE_API_PUBLIC_URL=https://0l.interblockcha.in:444
       - GA_MEASUREMENT_ID=G-Z8SZTHYB62
+      - VALIDATOR_DIEM_PROMETHEUS_HOST=192.168.1.3
     ports:
       - "3027:3027"
     volumes:

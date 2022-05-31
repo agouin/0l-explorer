@@ -59,7 +59,7 @@ const EventColumns = [
     width: 300,
     render: (_, record) => {
       const address = get(record, 'data.sender')
-      return <a href={`/address/${address}`}>{address}</a>
+      return <a href={`/address/${address}`}>{address ? address.toUpperCase(): ''}</a>
     },
   },
   {
@@ -68,7 +68,7 @@ const EventColumns = [
     width: 300,
     render: (_, record) => {
       const address = get(record, 'data.receiver')
-      return <a href={`/address/${address}`}>{address}</a>
+      return <a href={`/address/${address}`}>{address ? address.toUpperCase(): ''}</a>
     },
   },
 ]

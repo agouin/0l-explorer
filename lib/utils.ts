@@ -12,7 +12,7 @@ export const VALIDATOR_VOTES_PERCENT_THRESHOLD = 5
 export const hasInvite = (epochs_since_last_account_creation) =>
   epochs_since_last_account_creation >= EPOCHS_BEFORE_VALIDATOR_INVITE
 
-export const numberWithCommas = (x) => x.toLocaleString('en-US')
+export const numberWithCommas = (x) => (x == null || x == undefined) ? null : x.toLocaleString('en-US')
 
 export const Sorter = (getField) => (a, b) => {
   const fieldA = getField(a)

@@ -44,8 +44,7 @@ const NavLayout = ({ children, hideFooter }: NavLayoutProps) => {
       <div>
         <div className={classes.navBarContainer}>
           <div className={classes.homeLink} onClick={goHome}>
-            <img className={classes.icon} src="/img/0L.png"/>
-            <span className={classes.title}>0L Explorer</span>
+            <img className={classes.icon} src="/img/0l-logo.png"/>
           </div>
           <Search
             size="large"

@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 import classes from './address.module.scss'
 import {
   getAccount,
-  getAccountTransactions,
   getTowerState,
   getEvents,
   getTransactions,
@@ -14,7 +13,6 @@ import NavLayout from '../../components/navLayout/navLayout'
 import {
   Account,
   TransactionMin,
-  getTransactionMin,
   NodeRPCError,
   TowerState,
   Event,
@@ -29,7 +27,6 @@ import {
   getMinerProofHistory,
   getValidatorPermissionTree,
   getMinerPermissionTree,
-  getEpochsStats,
 } from '../../lib/api/permissionTree'
 
 import EventsTable from '../../components/eventsTable/eventsTable'
@@ -37,6 +34,7 @@ import { pageview, event } from '../../lib/gtag'
 import CommunityWallets from '../../lib/communityWallets'
 import QRCode from 'react-qr-code'
 import API from '../../lib/api/local'
+import communityWallets from '../../lib/communityWallets'
 
 const fallbackCopyTextToClipboard = (text) => {
   var textArea = document.createElement('textarea')
@@ -134,7 +132,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
     setEventsLoading(false)
   }
 
-  const lazyLoad = async (lowercaseAddress) => {
+  const lazyLoad = async (lowercaseAddress, lastEpochMined) => {
     const eventsKey = `0000000000000000${lowercaseAddress}`
     const errors = []
     const [
@@ -284,7 +282,12 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
         operatorAccount.toLowerCase()
       )
       if (operatorProofsRes.status === 200 && operatorProofsRes.data) {
-        if (!proofHistoryRes) setProofHistory(operatorProofsRes.data)
+        if (!proofHistoryRes) {
+          if (operatorProofsRes.data.length > 0) {
+            if (operatorProofsRes.data[0].epoch == lastEpochMined) operatorProofsRes.data.splice(0, 1)
+            setProofHistory(operatorProofsRes.data)
+          }
+        }
         else {
           const proofs = proofHistoryRes
           for (const proof of operatorProofsRes.data) {
@@ -294,12 +297,19 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
             if (index !== -1) proofs[index].count += proof.count
             else proofs.push(proof)
           }
-          proofs.sort((a, b) => b.epoch - a.epoch)
-          setProofHistory(proofs)
+         
+          if (proofs.length > 0) {
+            proofs.sort((a, b) => b.epoch - a.epoch)
+            if (proofs[0].epoch == lastEpochMined) proofs.splice(0, 1)
+            setProofHistory(proofs)
+          }
         }
       }
     } else if (proofHistoryRes) {
-      setProofHistory(proofHistoryRes)
+      if (proofHistoryRes.length > 0) {
+        if (proofHistoryRes[0].epoch == lastEpochMined) proofHistoryRes.splice(0, 1)
+        setProofHistory(proofHistoryRes)
+      }
     }
 
     if (type === 'Validator') {
@@ -316,7 +326,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
   useEffect(() => {
     pageview('/address', 'address')
     if (account && account.address) {
-      lazyLoad(account.address.toLowerCase())
+      lazyLoad(account.address.toLowerCase(), towerState ? towerState.latest_epoch_mining : 0)
     }
     if (errors.length > 0) {
       console.error(errors)
@@ -349,7 +359,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
               className={classes.address}
               onClick={copyTextToClipboard.bind(this, account.address)}>
               Address:{' '}
-              <span className={classes.addressText}>{account.address}</span>
+              <span className={classes.addressText}>{get(account, 'address', '').toUpperCase()}</span>
             </h1>
             <div className={classes.qrContainer}>
               <div>
@@ -450,7 +460,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                 <QRCode
                   size={100}
                   fgColor="#fff"
-                  bgColor="#003f34"
+                  bgColor="#000"
                   value={`https://0lexplorer.io/address/${account.address}`}
                 />
               </div>
@@ -463,7 +473,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                   <span className={classes.addressText}>Genesis</span>
                 ) : (
                   <a href={`/address/${onboardedBy}`}>
-                    <span className={classes.addressText}>{onboardedBy}</span>
+                    <span className={classes.addressText}>{onboardedBy ? onboardedBy.toUpperCase() : ''}</span>
                   </a>
                 )}
               </h1>
@@ -476,7 +486,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                   Created by Validator:{' '}
                   <a href={`/address/${validatorAccountCreatedBy}`}>
                     <span className={classes.addressText}>
-                      {validatorAccountCreatedBy}
+                      {validatorAccountCreatedBy? validatorAccountCreatedBy.toUpperCase() : ''}
                     </span>
                   </a>
                 </h1>
@@ -486,7 +496,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                 {towerState ? 'Operator' : 'Validator'}
                 {' Account: '}
                 <a href={`/address/${operatorAccount}`}>
-                  <span className={classes.addressText}>{operatorAccount}</span>
+                  <span className={classes.addressText}>{operatorAccount ? operatorAccount.toUpperCase() : ''}</span>
                 </a>
               </h1>
             )}
@@ -589,7 +599,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                   title: 'Community Wallet',
                   dataIndex: 'payee',
                   render: (address) => (
-                    <a href={`/address/${address}`}>{address}</a>
+                    <a href={`/address/${address}`}>{communityWallets[address] ? communityWallets[address].text : address ? address.toUpperCase() : ''}</a>
                   ),
                 },
                 { title: 'Amount', dataIndex: 'amount' },

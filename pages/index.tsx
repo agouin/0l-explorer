@@ -25,10 +25,10 @@ import { pageview } from '../lib/gtag'
 import EpochsTable from '../components/epochsTable/epochsTable'
 import UpgradesTable from '../components/upgradesTable/upgradesTable'
 import { get } from 'lodash'
-import { execSync } from 'child_process'
 import InactiveValidatorsTable from '../components/inactiveValidatorsTable/inactiveValidatorsTable'
 import { SortOrder } from 'antd/lib/table/interface'
 import ErrorPage from './_error'
+import { getCurrentConsensusRound } from '../lib/api/validator'
 
 const { TabPane } = Tabs
 
@@ -72,7 +72,7 @@ const IndexPage = ({
   defaultSortOrder
 }: IndexPageProps) => {
   if (error) {
-    return <ErrorPage><div style={{backgroundColor: 'maroon', margin: -16, paddingLeft: 16}}><h4 style={{color:"white"}}>0L network is undergoing maintenance</h4></div></ErrorPage>
+    return <ErrorPage><div style={{backgroundColor: '#B10022', margin: -16, paddingLeft: 16}}><h4 style={{color:"white"}}>0L network is undergoing maintenance</h4></div></ErrorPage>
   }
   useEffect(() => {
     const page = `/?tab=${initialTab}${latest ? '' : `&start=${startVersion}`}`
@@ -105,26 +105,26 @@ const IndexPage = ({
             previousIsLatest ? '/' : `/?start=${startVersion + TX_PER_PAGE}`
           }
         >
-          <Button type="primary" size="small" className={classes.pagerButton}>
-            <CaretLeftFilled />
-          </Button>
+          {/* <Button type="primary" size="small" className={classes.pagerButton}> */}
+            <CaretLeftFilled className={classes.pagerButton}/>
+          {/* </Button> */}
         </a>
       )) || (
-        <Button
-          type="primary"
-          size="small"
-          className={classes.pagerButton}
-          disabled
-        >
-          <CaretLeftFilled />
-        </Button>
+        // <Button
+        //   type="primary"
+        //   size="small"
+        //   className={classes.pagerButton}
+        //   disabled
+        // >
+          <a style={{cursor: 'not-allowed'}}><CaretLeftFilled className={classes.pagerButton} style={{color: '#aaa'}}/></a>
+        // </Button>
       )}
       <a href={`/?start=${startVersion - TX_PER_PAGE}`}>
-        <Button type="primary" size="small" className={classes.pagerButton}>
-          <CaretRightFilled />
-        </Button>
+        {/* <Button type="primary" size="small" className={classes.pagerButton}> */}
+          <CaretRightFilled className={classes.pagerButton}/>
+        {/* </Button> */}
       </a>
-      {!latest && <a href="/">Go to latest</a>}
+      {!latest && <a className={classes.latestLink} href="/">Go to latest</a>}
     </div>
   )
 
@@ -179,9 +179,9 @@ const IndexPage = ({
                 </Tooltip>
                 <Tooltip title="Current epoch (rewards are issued at start of epoch)">
                   <span className={classes.infoText}>
-                    Epoch:{' '}
+                  Epoch:{' '}
                     <span className={classes.thinText}>
-                      {vitals.chain_view.epoch}
+                      {numberWithCommas(vitals.chain_view.epoch)}
                     </span>
                   </span>
                 </Tooltip>
@@ -194,8 +194,8 @@ const IndexPage = ({
               </div>
               <Progress
                 showInfo={false}
-                trailColor="#003028"
-                strokeColor="#00806a"
+                strokeColor="#198be9"
+                trailColor="#e3f2ff"
                 className={classes.progressBar}
                 strokeLinecap="square"
                 percent={epochProgress}
@@ -213,7 +213,7 @@ const IndexPage = ({
                   <span className={classes.infoText}>
                     Total Addresses:{' '}
                     <span className={classes.thinText}>
-                      {stats.allAccountCount}
+                      {numberWithCommas(stats.allAccountCount)}
                     </span>
                   </span>
                 </Tooltip>
@@ -221,7 +221,7 @@ const IndexPage = ({
                   <span className={classes.infoText}>
                     Total Miners:{' '}
                     <span className={classes.thinText}>
-                      {stats.allMinerCount}
+                      {numberWithCommas(stats.allMinerCount)}
                     </span>
                   </span>
                 </Tooltip>
@@ -229,7 +229,7 @@ const IndexPage = ({
                   <span className={classes.infoText}>
                     Active Miners:{' '}
                     <span className={classes.thinText}>
-                      {stats.activeMinerCount}
+                      {numberWithCommas(stats.activeMinerCount)}
                     </span>
                   </span>
                 </Tooltip>
@@ -260,14 +260,16 @@ const IndexPage = ({
                     </div>
                   </div>
                 }
-                bottom={pager}
+                bottom={<div style={{marginTop: 8}}>{pager}</div>}
               />
             </Col>
             <Col xs={24} sm={24} md={24} lg={11}>
               <EventsTable
                 top={
+                  <div className={classes.outerHeader}>
                   <div className={classes.header}>
                     <span className={classes.title}>Events</span>
+                  </div>
                   </div>
                 }
                 events={events}
@@ -283,7 +285,9 @@ const IndexPage = ({
         </TabPane>
         <TabPane key="validators" tab="Validators">
           <ValidatorsTable
-            top={<span style={{fontSize: 20}}>Active Validator Set ({vitals.chain_view.validator_view.length})</span>}
+            top={<><h1 style={{fontSize: 20, color: 'white', marginBottom: 0, marginTop: -16}}>Active Validator Set</h1>
+            <span style={{fontSize: 18}}>Total: {vitals.chain_view.validator_view.length}  Current Round: {blocksInEpoch}</span>
+            </>}
             validators={vitals.chain_view.validator_view}
             validatorsMap={validatorsMap}
             blocksInEpoch={blocksInEpoch}
@@ -439,14 +443,17 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     }
   }
 
-  let blocksInEpoch = 0
+  // let blocksInEpoch = 0
 
-  if (vitals.chain_view.epoch) {
-    const currentEpochRes = await getEpochStats(vitals.chain_view.epoch)
-    if (currentEpochRes.status === 200) {
-      blocksInEpoch = vitals.chain_view.height - currentEpochRes.data.height
-    }
-  }
+  // if (vitals.chain_view.epoch) {
+  //   const currentEpochRes = await getEpochStats(vitals.chain_view.epoch)
+  //   if (currentEpochRes.status === 200) {
+  //     blocksInEpoch = vitals.chain_view.height - currentEpochRes.data.height
+  //   }
+  // }
+  const blocksInEpoch = await getCurrentConsensusRound()
+
+  console.log({blocksInEpoch})
 
   return {
     props: {
@@ -469,6 +476,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     },
   }
   } catch(err) {
+    console.error(err)
     return {
       props: {
         error: true,
