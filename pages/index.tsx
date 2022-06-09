@@ -13,14 +13,14 @@ import {
 } from '../lib/types/0l'
 import TransactionsTable from '../components/transactionsTable/transactionsTable'
 import classes from './index.module.scss'
-import { Button, message, Progress, Tooltip, Tabs, Col, Row, Table } from 'antd'
+import { message, Progress, Tooltip, Tabs, Col, Row } from 'antd'
 import Search from 'antd/lib/input/Search'
 import ValidatorsTable from '../components/validatorsTable/validatorsTable'
-import { hasInvite, numberWithCommas, getVitals } from '../lib/utils'
+import { numberWithCommas, getVitals } from '../lib/utils'
 import AutoPayTable from '../components/autoPayTable/autoPayTable'
-import { getStats, getEpochProofSums, getValidators, getEpochStats } from '../lib/api/permissionTree'
+import { getStats, getEpochProofSums, getValidators } from '../lib/api/permissionTree'
 import EventsTable from '../components/eventsTable/eventsTable'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { pageview } from '../lib/gtag'
 import EpochsTable from '../components/epochsTable/epochsTable'
 import UpgradesTable from '../components/upgradesTable/upgradesTable'
@@ -28,7 +28,7 @@ import { get } from 'lodash'
 import InactiveValidatorsTable from '../components/inactiveValidatorsTable/inactiveValidatorsTable'
 import { SortOrder } from 'antd/lib/table/interface'
 import ErrorPage from './_error'
-import { getCurrentConsensusRound } from '../lib/api/validator'
+import {io} from 'socket.io-client'
 
 const { TabPane } = Tabs
 
@@ -42,11 +42,11 @@ interface IndexPageProps {
   startVersion: number
   latest: boolean
   previousIsLatest: boolean
-  vitals: Vitals
+  initialVitals: Vitals
   initialTab: string
   stats: StatsResponse
   epochMinerStats: Map<string, EpochProofsResponse>
-  blocksInEpoch: number
+  initialConsensusRound: number
   allValidators: PermissionNodeValidator[]
   validatorsMap: Map<string, PermissionNodeValidator>
   inactiveValidators: PermissionNodeValidator[]
@@ -61,11 +61,11 @@ const IndexPage = ({
   latest,
   startVersion,
   previousIsLatest,
-  vitals,
+  initialVitals,
   initialTab,
   stats,
   epochMinerStats,
-  blocksInEpoch,
+  initialConsensusRound,
   validatorsMap,
   inactiveValidators,
   defaultSortKey,
@@ -74,9 +74,17 @@ const IndexPage = ({
   if (error) {
     return <ErrorPage><div style={{backgroundColor: '#B10022', margin: -16, paddingLeft: 16}}><h4 style={{color:"white"}}>0L network is undergoing maintenance</h4></div></ErrorPage>
   }
+  const [consensusRound, setConsensusRound] = useState(initialConsensusRound)
+  const [vitals, setVitals] = useState(initialVitals)
   useEffect(() => {
     const page = `/?tab=${initialTab}${latest ? '' : `&start=${startVersion}`}`
     pageview(page, initialTab)
+    const socket = io({transports: [ "websocket" ]})
+    socket.on('vitals', ({vitals: newVitals, consensusRound: newRound}) => {
+      console.log('got new vitals', {newRound, newVitals})
+      setConsensusRound(newRound)
+      setVitals(newVitals)
+    })
   }, [])
 
   const start = useRef(startVersion)
@@ -286,11 +294,11 @@ const IndexPage = ({
         <TabPane key="validators" tab="Validators">
           <ValidatorsTable
             top={<><h1 style={{fontSize: 20, marginBottom: 0, marginTop: -16}}>Active Validator Set</h1>
-            <span style={{fontSize: 18, color: 'black'}}><b>Total:</b> {vitals.chain_view.validator_view.length}  <b>Current Round</b>: {blocksInEpoch}</span>
+            <span style={{fontSize: 18, color: 'black'}}><b>Total:</b> {vitals.chain_view.validator_view.length}  <b>Current Round</b>: {consensusRound}</span>
             </>}
             validators={vitals.chain_view.validator_view}
             validatorsMap={validatorsMap}
-            blocksInEpoch={blocksInEpoch}
+            blocksInEpoch={consensusRound}
             onSortChange={handleValidatorsSortChange}
             defaultSortKey={defaultSortKey}
             defaultSortOrder={defaultSortOrder}
@@ -358,7 +366,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   try {
   const [
     { data: metadataRes, status: metadataStatus },
-    vitals,
+    initialVitals,
     { data: permissionTreeStats, status: permissionTreeStatsStatus },
     { data: epochProofSums, status: epochProofSumsStatus },
     { data: allValidators, status: validatorsStatus }
@@ -436,24 +444,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const inactiveValidators = []
 
   if (allValidators && Array.isArray(allValidators)) {
-    inactiveValidators.push(...allValidators.filter(validator => !vitals.chain_view.validator_view.find(activeVal => activeVal.account_address.toLowerCase() === validator.address.toLowerCase())))
+    inactiveValidators.push(...allValidators.filter(validator => !initialVitals.chain_view.validator_view.find(activeVal => activeVal.account_address.toLowerCase() === validator.address.toLowerCase())))
 
     for (const validator of allValidators) {
       validatorsMap[validator.address.toLowerCase()] = validator
     }
   }
-
-  // let blocksInEpoch = 0
-
-  // if (vitals.chain_view.epoch) {
-  //   const currentEpochRes = await getEpochStats(vitals.chain_view.epoch)
-  //   if (currentEpochRes.status === 200) {
-  //     blocksInEpoch = vitals.chain_view.height - currentEpochRes.data.height
-  //   }
-  // }
-  const blocksInEpoch = await getCurrentConsensusRound()
-
-  console.log({blocksInEpoch})
 
   return {
     props: {
@@ -463,13 +459,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       startVersion,
       latest,
       previousIsLatest,
-      vitals,
+      initialVitals,
       stats,
       epochMinerStats,
       allValidators,
       inactiveValidators,
       validatorsMap,
-      blocksInEpoch,
+      initialConsensusRound: global.consensusRound,
       initialTab: query.tab || 'dashboard',
       defaultSortKey: query.sort || 'voting_power',
       defaultSortOrder: query.order || 'descend',
@@ -485,13 +481,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         startVersion: -1,
         latest: true,
         previousIsLatest: false,
-        vitals: {chain_view: { height: 0, epoch_progress: 0, validator_count: 0, epoch: 0, total_supply: 0, validator_view: []}},
+        initialVitals: {chain_view: { height: 0, epoch_progress: 0, validator_count: 0, epoch: 0, total_supply: 0, validator_view: []}},
         stats: {},
         epochMinerStats: {},
         allValidators: [],
         inactiveValidators: [],
         validatorsMap: {},
-        blocksInEpoch: 0,
+        initialConsensusRound: 0,
         initialTab: query.tab || 'dashboard',
         defaultSortKey: query.sort || 'voting_power',
         defaultSortOrder: query.order || 'descend',

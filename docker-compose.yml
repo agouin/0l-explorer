@@ -1,7 +1,9 @@
 version: '3.4'
 services:
   0l:
-    build: .
+    build:
+      context: .
+      dockerfile: local.Dockerfile
     command: yarn nodemon --watch routers/ --watch lib/**/*.js --watch index.js index.js
     environment:
       - PORT=3027

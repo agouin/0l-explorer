@@ -1,7 +1,4 @@
 import { Vitals } from './types/0l'
-import EventSource from 'eventsource'
-
-const { WEB_MONITOR_HOSTNAME } = process.env
 
 export const EPOCHS_BEFORE_VALIDATOR_INVITE = 14
 
@@ -44,34 +41,5 @@ export const timeDifference = (current, previous) => {
   return Math.round(elapsed / msPerYear) + ' years ago'
 }
 
-export const getVitals = (): Promise<Vitals> =>
-  new Promise((res, rej) => {
-    const uri = `http://${WEB_MONITOR_HOSTNAME}:3030/vitals`
-    try {
-      const sse = new EventSource(uri)
-      sse.onmessage = (msg) => {
-        sse.close()
-        res(JSON.parse(msg.data))
-      }
-      sse.onerror = (err) => {
-        sse.close()
-        res({
-          chain_view: {
-            epoch: 0,
-            height: 0,
-            validator_count: 0,
-            latest_epoch_change_time: 0,
-            waypoint: '',
-            //@ts-ignore
-            upgrade: {},
-            epoch_progress: 0,
-            total_supply: 0,
-            validator_view: [],
-          },
-        })
-        //rej(err)
-      }
-    } catch (err) {
-      rej(err)
-    }
-  })
+export const getVitals = ():Vitals => global.getVitals() as Vitals
+ 

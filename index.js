@@ -8,6 +8,8 @@ const epochsRouter = require('./routers/epochs')
 const towerRouter = require('./routers/tower')
 const nodeProxy = require('./routers/nodeProxy')
 const webmonitorProxy = require('./routers/webMonitor')
+const { Server } = require("socket.io")
+const { getCurrentConsensusRound } = require('./lib/api/validator')
 
 const { NODE_ENV, PORT: ENV_PORT } = process.env
 const PORT = ENV_PORT || 3027
@@ -31,6 +33,7 @@ router.get('/(.*)', async (ctx) => {
   ctx.respond = false
 })
 
+
 app.use(nodeProxy.routes())
 app.use(webmonitorProxy.routes())
 app.use(epochsRouter.routes())
@@ -43,5 +46,54 @@ app.on('error', (error) => {
 })
 
 const httpServer = http.createServer(app.callback())
+
+const io = new Server(httpServer)
+
+const EventSource = require('eventsource')
+
+const { WEB_MONITOR_HOSTNAME } = process.env
+
+const startVitals = async () => {
+  const uri = `http://${WEB_MONITOR_HOSTNAME}:3030/vitals`
+    try {
+      const sse = new EventSource(uri)
+      sse.onmessage = async (msg) => {
+        global.consensusRound = await getCurrentConsensusRound()
+        global.vitalsCache = JSON.parse(msg.data)
+        io.emit('vitals', {
+          consensusRound: global.consensusRound,
+          vitals: global.vitalsCache,
+        })
+      }
+      sse.onerror = (err) => {
+        console.error('Event source error', err)
+        sse.close()
+        setTimeout(startVitals, 10000)
+      }
+    } catch (err) {
+      setTimeout(startVitals, 10000)
+    }
+}
+
+startVitals()
+
+global.getVitals = () => global.vitalsCache || {
+  chain_view: {
+    epoch: 0,
+    height: 0,
+    validator_count: 0,
+    latest_epoch_change_time: 0,
+    waypoint: '',
+    //@ts-ignore
+    upgrade: {},
+    epoch_progress: 0,
+    total_supply: 0,
+    validator_view: [],
+  },
+}
+
+io.on('connection', (socket) => {
+  console.log('a user connected')
+})
 httpServer.listen(PORT)
 console.log('Listening on port', PORT)
