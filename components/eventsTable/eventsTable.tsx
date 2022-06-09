@@ -49,7 +49,7 @@ const EventColumns = [
     sorter: Sorter((record) => get(record, 'data.amount.amount') || 0),
     render: (_, record) => {
       const amount = get(record, 'data.amount.amount')
-      if (amount == undefined) return ''
+      if (amount == undefined) return '--'
       return numberWithCommas(amount / 1000000)
     },
   },
@@ -59,6 +59,7 @@ const EventColumns = [
     width: 300,
     render: (_, record) => {
       const address = get(record, 'data.sender')
+      if (!address) return '--'
       return <a href={`/address/${address}`}>{address ? address.toUpperCase(): ''}</a>
     },
   },
@@ -68,6 +69,7 @@ const EventColumns = [
     width: 300,
     render: (_, record) => {
       const address = get(record, 'data.receiver')
+      if (!address) return '--'
       return <a href={`/address/${address}`}>{address ? address.toUpperCase(): ''}</a>
     },
   },

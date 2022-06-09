@@ -285,8 +285,8 @@ const IndexPage = ({
         </TabPane>
         <TabPane key="validators" tab="Validators">
           <ValidatorsTable
-            top={<><h1 style={{fontSize: 20, color: 'white', marginBottom: 0, marginTop: -16}}>Active Validator Set</h1>
-            <span style={{fontSize: 18}}>Total: {vitals.chain_view.validator_view.length}  Current Round: {blocksInEpoch}</span>
+            top={<><h1 style={{fontSize: 20, marginBottom: 0, marginTop: -16}}>Active Validator Set</h1>
+            <span style={{fontSize: 18, color: 'black'}}><b>Total:</b> {vitals.chain_view.validator_view.length}  <b>Current Round</b>: {blocksInEpoch}</span>
             </>}
             validators={vitals.chain_view.validator_view}
             validatorsMap={validatorsMap}
@@ -296,7 +296,7 @@ const IndexPage = ({
             defaultSortOrder={defaultSortOrder}
           />
           <InactiveValidatorsTable
-            top={<span style={{fontSize: 20}}>Inactive Validators ({inactiveValidators.length})</span>}
+            top={<span style={{fontSize: 20, color:'black'}}>Inactive Validators ({inactiveValidators.length})</span>}
             validators={inactiveValidators}
             validatorsMap={validatorsMap}
           />

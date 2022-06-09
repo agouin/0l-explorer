@@ -587,7 +587,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
             <h1 className={classes.onboardedBy}>
               Total Recurring:{' '}
               <span className={classes.addressText}>
-                {(validatorAutoPayStats.autopay.recurring_sum / 100).toFixed(2)}
+                {(get(validatorAutoPayStats,'autopay.recurring_sum', 0) / 100).toFixed(2)}
                 %
               </span>
             </h1>
@@ -605,7 +605,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                 { title: 'Amount', dataIndex: 'amount' },
                 { title: 'End Epoch', dataIndex: 'end_epoch' },
               ]}
-              dataSource={validatorAutoPayStats.autopay.payments}
+              dataSource={get(validatorAutoPayStats,'autopay.payments') || []}
               pagination={{
                 pageSize: 5,
                 showSizeChanger: false,

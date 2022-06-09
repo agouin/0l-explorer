@@ -1,5 +1,58 @@
+@font-face {
+  font-family: Circular;
+  font-weight: 200;
+  src: url("/fonts/Circular/CircularStd-Book.otf") format("opentype");
+}
+
+@font-face {
+  font-family: Circular;
+  font-weight: 200;
+  font-style: italic;
+  src: url("/fonts/Circular/CircularStd-BookItalic.otf") format("opentype");
+}
+
+@font-face {
+  font-family: Circular;
+  font-weight: 400;
+  src: url("/fonts/Circular/CircularStd-Medium.otf") format("opentype");
+}
+
+@font-face {
+  font-family: Circular;
+  font-weight: 400;
+  font-style: italic;
+  src: url("/Circular/CircularStd-MediumItalic.otf") format("opentype");
+}
+
+@font-face {
+  font-family: Circular;
+  font-weight: 600;
+  src: url("/fonts/Circular/CircularStd-Bold.otf") format("opentype");
+}
+
+@font-face {
+  font-family: Circular;
+  font-weight: 600;
+  font-style: italic;
+  src: url("/fonts/Circular/CircularStd-BoldItalic.otf") format("opentype");
+}
+
+@font-face {
+  font-family: Circular;
+  font-weight: 800;
+  src: url("/fonts/Circular/CircularStd-Black.otf") format("opentype");
+}
+
+@font-face {
+  font-family: Circular;
+  font-weight: 800;
+  font-style: italic;
+  src: url("/fonts/Circular/CircularStd-BlackItalic.otf") format("opentype");
+}
+
 body {
   background: white;
+  font-family: Circular !important;
   //color: white;
 }
 
@@ -43,7 +96,7 @@ body {
     }
   }
   color: #9a9899;
-  font-weight: 600;
+  font-weight: 200;
 }
 
 // .ant-table-thead > tr > th {
@@ -68,6 +121,7 @@ body {
   //border: 0px white;
   color: #ff5959;
   font-weight: 600;
+  font-size: 11pt;
   background-color: white!important;
   }
 
@@ -163,7 +217,6 @@ a:hover {
 
 .ant-tabs {
   color: #1890ff;
-  font-weight: 600;
 }
 
 .ant-tabs-tab {
@@ -180,7 +233,9 @@ a:hover {
 
 .ant-tabs-tab .ant-tabs-tab-btn {
   color: #1890ff;
-  margin-bottom: -8px;
+  margin-bottom: -10px;
+  font-weight: 800;
+  font-size: 13pt;
 }
 
 .ant-tabs-tab:hover {
