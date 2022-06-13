@@ -168,6 +168,14 @@ const ValidatorsTable = ({
       },
     },
     {
+      key: 'burn_to_community',
+      title: 'Burn to Community',
+      width: 100,
+      sorter: Sorter((record) => record.burn_to_community),
+      dataIndex: 'burn_to_community',
+      render: (record) => <BoolIcon condition={record}/>
+    },
+    {
       key: 'epochs_since_last_account_creation',
       defaultSortOrder: getDefaultSortOrder('epochs_since_last_account_creation'),
       title: 'Days since last account creation',
