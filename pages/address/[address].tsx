@@ -459,8 +459,9 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
               <div className={classes.qrCode}>
                 <QRCode
                   size={100}
-                  fgColor="#fff"
-                  bgColor="#000"
+                  fgColor="#000"
+                  bgColor="#fff"
+                  level={"M"}
                   value={`https://0lexplorer.io/address/${account.address}`}
                 />
               </div>
