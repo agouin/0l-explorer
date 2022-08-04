@@ -1,5 +1,5 @@
 export default {
-    2640cd6d652ac94dc5f0963dcc00bcc7: {
+    '2640cd6d652ac94dc5f0963dcc00bcc7': {
       text: 'Engineering Fund, tool-scrubbers-guild',
       link: 'https://github.com/OLSF/tool-scrubbers-guild',
     },
