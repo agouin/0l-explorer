@@ -1,4 +1,8 @@
 export default {
+    '2640cd6d652ac94dc5f0963dcc00bcc7': {
+      text: 'Engineering Fund, tool-scrubbers-guild',
+      link: 'https://github.com/OLSF/tool-scrubbers-guild',
+    },
     c906f67f626683b77145d1f20c1a753b: {
       text: 'The Iqlusion Engineering Program',
       link:
