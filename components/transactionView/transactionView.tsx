@@ -161,7 +161,7 @@ const TransactionView = ({
   }
   return (
     <div className={classes.tableContainer}>
-      <div className={classes.inner}>
+      <div className={info.length === 0 ? classes.innerEmpty : classes.inner}>
         {top}
         <Table
           pagination={false}

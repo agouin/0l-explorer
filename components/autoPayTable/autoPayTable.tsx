@@ -74,15 +74,17 @@ const AutoPayTable = ({ validators, top, bottom }: AutoPayTableProps) => {
     },
   ]
 
+  const data = Object.keys(CommunityWallets).map((address) => ({ address }))
+
   return (
     <div className={classes.tableContainer}>
-      <div className={classes.inner}>
+      <div className={data.length === 0 ? classes.innerEmpty : classes.inner}>
         {top}
         <Table
           rowKey="address"
           scroll={{ x: true }}
           columns={AutoPayColumns}
-          dataSource={Object.keys(CommunityWallets).map((address) => ({ address }))}
+          dataSource={data}
           pagination={false}
         />
         {bottom}

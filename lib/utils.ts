@@ -23,6 +23,14 @@ export const Sorter = (getField) => (a, b) => {
   return 0
 }
 
+export const formatCash = n => {
+  if (n < 1e3) return n;
+  if (n >= 1e3 && n < 1e6) return +(n / 1e3).toFixed(3) + "K";
+  if (n >= 1e6 && n < 1e9) return +(n / 1e6).toFixed(3) + "M";
+  if (n >= 1e9 && n < 1e12) return +(n / 1e9).toFixed(3) + "B";
+  if (n >= 1e12) return +(n / 1e12).toFixed(3) + "T";
+};
+
 export const timeDifference = (current, previous) => {
   const msPerMinute = 60 * 1000
   const msPerHour = msPerMinute * 60

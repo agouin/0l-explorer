@@ -223,7 +223,7 @@ const ValidatorsTable = ({
 
   return (
     <div className={classes.tableContainer}>
-      <div className={classes.inner}>
+      <div className={validators.length === 0 ? classes.innerEmpty : classes.inner}>
         {top}
         <Table
           rowKey="account_address"

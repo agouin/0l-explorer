@@ -18,128 +18,85 @@ router.post('(.*)', async (ctx) => {
   ctx.body = res.data
 })
 
-module.exports = router
+router.get('/account-transactions', async (ctx) => {
+  const { start, limit, address } = ctx.query
+  const { data, status } = await getAccountTransactions({
+    account: address,
+    start: parseInt(start),
+    limit: parseInt(limit),
+    includeEvents: true,
+  })
+  ctx.status = status
+  ctx.body = data
+})
 
-router.get('/transactions', async (ctx) => {
-  const { type, address } = ctx.query
+router.get('/events', async (ctx) => {
+  const { start, limit, address } = ctx.query
   const eventsKey = `0000000000000000${address}`
-  const [
-    { data: transactionsRes, status: transactionsStatus },
-    { data: eventsRes, status: eventsStatus },
-  ] = await Promise.all([
-    getAccountTransactions({
-      account: address,
-      start: 0,
-      limit: 1000,
-      includeEvents: true,
-    }),
-    getEvents({ key: eventsKey, start: 0, limit: 1000 }),
-  ])
+  const { data, status } = await getEvents({ 
+    key: eventsKey, 
+    start: parseInt(start),
+    limit: parseInt(limit),
+  })
+  ctx.status = status
+  ctx.body = data
+})
 
+var epochEvents = {}
+
+router.get('/epoch-events', async (ctx) => {
+  const { address } = ctx.query
   const events = []
-  let eventsCount = 0
-  if (eventsStatus === 200 && !eventsRes.error) {
-    events.unshift(
-      ...eventsRes.result.sort(
-        (a, b) => b.transaction_version - a.transaction_version
-      )
-    )
-    eventsCount = eventsRes.result.length
+  for (const epoch in epochEvents) {
+    events.push(...epochEvents[epoch].filter(
+      (event) => get(event, 'data.sender', '').toLowerCase() === address
+    ))
+  }
+  ctx.body = events
+})
+
+
+
+const updateValidatorEpochStats = async () => {
+  const epochsRes = await getEpochsStats()
+  if (epochsRes.status !== 200) {
+    console.error('Error fetching epoch stats')
+    return
   }
 
-  let start = eventsCount
-  while (eventsCount === 1000) {
-    const nextSetOfEventsRes = await getEvents({
-      key: eventsKey,
-      start,
-      limit: 1000,
-    })
-    if (nextSetOfEventsRes.status !== 200 || nextSetOfEventsRes.data.error)
-      break
-    events.unshift(...nextSetOfEventsRes.data.result)
-    eventsCount = nextSetOfEventsRes.data.result.length
-    start += eventsCount
-  }
-
-  const transactions = []
-
-  let transactionsCount = 0
-  if (transactionsStatus === 200 && !transactionsRes.error) {
-    transactions.unshift(
-      ...transactionsRes.result
-        .sort((a, b) => b.version - a.version)
-        .map((tx) => {
-          if (tx.events && tx.events.length) {
-            events.unshift(
-              ...tx.events.filter((event) => event.data.type === 'sentpayment')
-            )
-          }
-          return getTransactionMin(tx)
-        })
-    )
-    transactionsCount = transactionsRes.result.length
-  }
-
-  let startTx = transactionsCount
-
-  while (transactionsCount === 1000) {
-    const nextSetOfTransactionsRes = await getAccountTransactions({
-      account: address,
-      start: startTx,
-      limit: 1000,
+  for (const epoch of epochsRes.data) {
+    if (epochEvents[epoch.epoch]) {
+      continue
+    }
+    const epochRes = await getTransactions({
+      startVersion: epoch.height,
+      limit: 2,
       includeEvents: true,
     })
-    if (
-      nextSetOfTransactionsRes.status !== 200 ||
-      nextSetOfTransactionsRes.data.error
-    )
-      break
-    transactions.unshift(
-      ...nextSetOfTransactionsRes.data.result
-        .sort((a, b) => b.version - a.version)
-        .map((tx) => {
-          if (tx.events && tx.events.length) {
-            events.unshift(
-              ...tx.events.filter((event) => event.data.type === 'sentpayment')
-            )
-          }
-          return getTransactionMin(tx)
+    if (epochRes.status !== 200) {
+      console.log('one of the epoch res had an error')
+      return
+    }
+    if (!epochEvents[epoch.epoch]) epochEvents[epoch.epoch] = []
+    for (const result of epochRes.data.result) {
+      if (get(result, 'events.length')) {
+        const newEvents = result.events.filter(
+          (event) => event.data.type === 'sentpayment' /* &&
+              get(event, 'data.sender', '').toLowerCase() === address*/
+        ).map(event => {
+          event.timestamp = result.transaction.timestamp_usecs
+          return event
         })
-    )
-    transactionsCount = nextSetOfTransactionsRes.data.result.length
-    startTx += transactionsCount
-  }
-
-  if (type === 'Validator') {
-    const epochsRes = await getEpochsStats()
-    if (epochsRes.status === 200) {
-      const epochEventsRes = await Promise.all(
-        epochsRes.data.map((epoch) =>
-          getTransactions({
-            startVersion: epoch.height,
-            limit: 2,
-            includeEvents: true,
-          })
-        )
-      )
-      for (const epochRes of epochEventsRes) {
-        if (epochRes.status === 200) {
-          for (const result of epochRes.data.result) {
-            if (get(result, 'events.length')) {
-              events.unshift(
-                ...result.events.filter(
-                  (event) =>
-                    event.data.type === 'sentpayment' &&
-                    get(event, 'data.sender', '').toLowerCase() === address
-                )
-              )
-            }
-          }
+        if (newEvents.length === 0) {
+          continue
         }
+        epochEvents[epoch.epoch].push(...newEvents)
       }
     }
   }
-  ctx.body = { transactions, events: events.sort(
-    (a, b) => b.transaction_version - a.transaction_version
-  ) }
-})
+}
+
+setInterval(updateValidatorEpochStats, 60000)
+updateValidatorEpochStats()
+
+module.exports = router

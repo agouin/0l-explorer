@@ -18,7 +18,12 @@ import Search from 'antd/lib/input/Search'
 import ValidatorsTable from '../components/validatorsTable/validatorsTable'
 import { numberWithCommas, getVitals } from '../lib/utils'
 import AutoPayTable from '../components/autoPayTable/autoPayTable'
-import { getStats, getEpochProofSums, getValidators } from '../lib/api/permissionTree'
+import {
+  getStats,
+  getEpochProofSums,
+  getValidators,
+  getEpochsStats,
+} from '../lib/api/permissionTree'
 import EventsTable from '../components/eventsTable/eventsTable'
 import { useEffect, useRef, useState } from 'react'
 import { pageview } from '../lib/gtag'
@@ -28,7 +33,7 @@ import { get } from 'lodash'
 import InactiveValidatorsTable from '../components/inactiveValidatorsTable/inactiveValidatorsTable'
 import { SortOrder } from 'antd/lib/table/interface'
 import ErrorPage from './_error'
-import {io} from 'socket.io-client'
+import { io } from 'socket.io-client'
 
 const { TabPane } = Tabs
 
@@ -69,19 +74,27 @@ const IndexPage = ({
   validatorsMap,
   inactiveValidators,
   defaultSortKey,
-  defaultSortOrder
+  defaultSortOrder,
 }: IndexPageProps) => {
   if (error) {
-    return <ErrorPage><div style={{backgroundColor: '#B10022', margin: -16, paddingLeft: 16}}><h4 style={{color:"white"}}>0L network is undergoing maintenance</h4></div></ErrorPage>
+    return (
+      <ErrorPage>
+        <div
+          style={{ backgroundColor: '#B10022', margin: -16, paddingLeft: 16 }}>
+          <h4 style={{ color: 'white' }}>
+            0L network is undergoing maintenance
+          </h4>
+        </div>
+      </ErrorPage>
+    )
   }
   const [consensusRound, setConsensusRound] = useState(initialConsensusRound)
   const [vitals, setVitals] = useState(initialVitals)
   useEffect(() => {
     const page = `/?tab=${initialTab}${latest ? '' : `&start=${startVersion}`}`
     pageview(page, initialTab)
-    const socket = io({transports: [ "websocket" ]})
-    socket.on('vitals', ({vitals: newVitals, consensusRound: newRound}) => {
-      console.log('got new vitals', {newRound, newVitals})
+    const socket = io({ transports: ['websocket'] })
+    socket.on('vitals', ({ vitals: newVitals, consensusRound: newRound }) => {
       setConsensusRound(newRound)
       setVitals(newVitals)
     })
@@ -111,10 +124,9 @@ const IndexPage = ({
         <a
           href={
             previousIsLatest ? '/' : `/?start=${startVersion + TX_PER_PAGE}`
-          }
-        >
+          }>
           {/* <Button type="primary" size="small" className={classes.pagerButton}> */}
-            <CaretLeftFilled className={classes.pagerButton}/>
+          <CaretLeftFilled className={classes.pagerButton} />
           {/* </Button> */}
         </a>
       )) || (
@@ -124,15 +136,24 @@ const IndexPage = ({
         //   className={classes.pagerButton}
         //   disabled
         // >
-          <a style={{cursor: 'not-allowed'}}><CaretLeftFilled className={classes.pagerButton} style={{color: '#aaa'}}/></a>
+        <a style={{ cursor: 'not-allowed' }}>
+          <CaretLeftFilled
+            className={classes.pagerButton}
+            style={{ color: '#aaa' }}
+          />
+        </a>
         // </Button>
       )}
       <a href={`/?start=${startVersion - TX_PER_PAGE}`}>
         {/* <Button type="primary" size="small" className={classes.pagerButton}> */}
-          <CaretRightFilled className={classes.pagerButton}/>
+        <CaretRightFilled className={classes.pagerButton} />
         {/* </Button> */}
       </a>
-      {!latest && <a className={classes.latestLink} href="/">Go to latest</a>}
+      {!latest && (
+        <a className={classes.latestLink} href="/">
+          Go to latest
+        </a>
+      )}
     </div>
   )
 
@@ -146,16 +167,22 @@ const IndexPage = ({
   const handleRouteChange = () => {
     const query = {
       ...(tab.current == 'dashboard' && {
-        ...(!latest && {start: `${start.current}`}),
+        ...(!latest && { start: `${start.current}` }),
       }),
       ...(tab.current == 'validators' && {
-        ...(sortOrder.current && sortOrder.current != 'descend' && { order: sortOrder.current}),
-        ...(sortKey.current && sortKey.current != 'voting_power' && { sort: sortKey.current})
-      })
+        ...(sortOrder.current &&
+          sortOrder.current != 'descend' && { order: sortOrder.current }),
+        ...(sortKey.current &&
+          sortKey.current != 'voting_power' && { sort: sortKey.current }),
+      }),
     }
-    const page = `/${tab.current == 'dashboard' ? '' : tab.current}${Object.keys(query).length > 0 ? `?${new URLSearchParams(query).toString()}` : ''}`
+    const page = `/${tab.current == 'dashboard' ? '' : tab.current}${
+      Object.keys(query).length > 0
+        ? `?${new URLSearchParams(query).toString()}`
+        : ''
+    }`
     window.history.pushState({}, null, page)
-    return page    
+    return page
   }
 
   const handleTabChange = (newTab) => {
@@ -187,7 +214,7 @@ const IndexPage = ({
                 </Tooltip>
                 <Tooltip title="Current epoch (rewards are issued at start of epoch)">
                   <span className={classes.infoText}>
-                  Epoch:{' '}
+                    Epoch:{' '}
                     <span className={classes.thinText}>
                       {numberWithCommas(vitals.chain_view.epoch)}
                     </span>
@@ -233,7 +260,7 @@ const IndexPage = ({
                     </span>
                   </span>
                 </Tooltip>
-                <Tooltip title="Addresses that have submitted proofs in current epoch">
+                <Tooltip title="Addresses that have submitted proofs in current or previous epoch">
                   <span className={classes.infoText}>
                     Active Miners:{' '}
                     <span className={classes.thinText}>
@@ -247,6 +274,7 @@ const IndexPage = ({
           <Row>
             <Col xs={24} sm={24} md={24} lg={13}>
               <TransactionsTable
+                sortEnabled={false}
                 transactions={transactions}
                 pagination={false}
                 top={
@@ -268,16 +296,17 @@ const IndexPage = ({
                     </div>
                   </div>
                 }
-                bottom={<div style={{marginTop: 8}}>{pager}</div>}
+                bottom={<div style={{ marginTop: 8 }}>{pager}</div>}
               />
             </Col>
             <Col xs={24} sm={24} md={24} lg={11}>
               <EventsTable
+                sortEnabled={false}
                 top={
                   <div className={classes.outerHeader}>
-                  <div className={classes.header}>
-                    <span className={classes.title}>Events</span>
-                  </div>
+                    <div className={classes.header}>
+                      <span className={classes.title}>Events</span>
+                    </div>
                   </div>
                 }
                 events={events}
@@ -293,9 +322,17 @@ const IndexPage = ({
         </TabPane>
         <TabPane key="validators" tab="Validators">
           <ValidatorsTable
-            top={<><h1 style={{fontSize: 20, marginBottom: 0, marginTop: -16}}>Active Validator Set</h1>
-            <span style={{fontSize: 18, color: 'black'}}><b>Total:</b> {vitals.chain_view.validator_view.length}  <b>Current Round</b>: {consensusRound}</span>
-            </>}
+            top={
+              <>
+                <h1 style={{ fontSize: 20, marginBottom: 0, marginTop: -16 }}>
+                  Active Validator Set
+                </h1>
+                <span style={{ fontSize: 18, color: 'black' }}>
+                  <b>Total:</b> {vitals.chain_view.validator_view.length}{' '}
+                  <b>Current Round</b>: {consensusRound}
+                </span>
+              </>
+            }
             validators={vitals.chain_view.validator_view}
             validatorsMap={validatorsMap}
             blocksInEpoch={consensusRound}
@@ -304,7 +341,11 @@ const IndexPage = ({
             defaultSortOrder={defaultSortOrder}
           />
           <InactiveValidatorsTable
-            top={<span style={{fontSize: 20, color:'black'}}>Inactive Validators ({inactiveValidators.length})</span>}
+            top={
+              <span style={{ fontSize: 20, color: 'black' }}>
+                Inactive Validators ({inactiveValidators.length})
+              </span>
+            }
             validators={inactiveValidators}
             validatorsMap={validatorsMap}
           />
@@ -315,9 +356,11 @@ const IndexPage = ({
         <TabPane key="upgrades" tab="Upgrades">
           <div className={classes.topStats}>
             <div className={classes.topStatsInner}>
-              {get(vitals, 'chain_view.upgrade.upgrade.vote_counts[0].hash.length') ? (
+              {get(
+                vitals,
+                'chain_view.upgrade.upgrade.vote_counts[0].hash.length'
+              ) ? (
                 <>
-                 
                   <div className={classes.infoRow}>
                     <Tooltip title="Number of validators that have voted on proposals during this voting window">
                       <span className={classes.infoText}>
@@ -340,14 +383,16 @@ const IndexPage = ({
                       </span>
                     </Tooltip>
                   </div>
-                  
                 </>
               ) : (
                 <div>No Active Upgrade Voting</div>
               )}
             </div>
           </div>
-          {get(vitals, 'chain_view.upgrade.upgrade.vote_counts[0].hash.length') && <UpgradesTable vitals={vitals} />}
+          {get(
+            vitals,
+            'chain_view.upgrade.upgrade.vote_counts[0].hash.length'
+          ) && <UpgradesTable vitals={vitals} />}
         </TabPane>
       </Tabs>
     </NavLayout>
@@ -364,114 +409,137 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 
   try {
-  const [
-    { data: metadataRes, status: metadataStatus },
-    initialVitals,
-    { data: permissionTreeStats, status: permissionTreeStatsStatus },
-    { data: epochProofSums, status: epochProofSumsStatus },
-    { data: allValidators, status: validatorsStatus }
-  ] = await Promise.all([
-    getMetadata({}),
-    getVitals(),
-    getStats(),
-    getEpochProofSums(),
-    getValidators()
-  ])
-  if (metadataStatus !== 200) return { props: {} }
-  const {
-    result: { version },
-  } = metadataRes
+    const [
+      { data: metadataRes, status: metadataStatus },
+      initialVitals,
+      { data: permissionTreeStats, status: permissionTreeStatsStatus },
+      { data: epochProofSums, status: epochProofSumsStatus },
+      { data: epochStats, status: epochStatsStatus },
+      { data: allValidators, status: validatorsStatus },
+    ] = await Promise.all([
+      getMetadata({}),
+      getVitals(),
+      getStats(),
+      getEpochProofSums(),
+      getEpochsStats(),
+      getValidators(),
+    ])
+    if (metadataStatus !== 200) return { props: {} }
+    const {
+      result: { version },
+    } = metadataRes
 
-  if (startVersion === undefined || isNaN(startVersion)) {
-    startVersion = version - TX_PER_PAGE + 10
-  }
-
-  if (startVersion < MIN_VERSION) startVersion = MIN_VERSION
-  else if (startVersion > version) startVersion = version - TX_PER_PAGE + 10
-
-  const latest = startVersion + TX_PER_PAGE > version
-  const previousIsLatest = startVersion + 2 * TX_PER_PAGE > version
-
-  const { data: transactionsRes, status: transactionsStatus } =
-    await getTransactions({
-      startVersion,
-      limit: TX_PER_PAGE,
-      includeEvents: true,
-    })
-
-  const transactions: TransactionMin[] =
-    transactionsStatus === 200 && transactionsRes.result
-      ? transactionsRes.result
-          .sort((a, b) => b.version - a.version)
-          .map((tx) => getTransactionMin(tx))
-      : []
-
-  const events = []
-
-  if (transactions && transactions.length && transactionsRes.result) {
-    for (const transaction of transactionsRes.result) {
-      events.push(...transaction.events)
+    if (startVersion === undefined || isNaN(startVersion)) {
+      startVersion = version - TX_PER_PAGE + 10
     }
-  }
 
-  const stats = permissionTreeStatsStatus === 200 ? permissionTreeStats : {}
+    if (startVersion < MIN_VERSION) startVersion = MIN_VERSION
+    else if (startVersion > version) startVersion = version - TX_PER_PAGE + 10
 
-  const epochMinerStats = {}
+    const latest = startVersion + TX_PER_PAGE > version
+    const previousIsLatest = startVersion + 2 * TX_PER_PAGE > version
 
-  if (epochProofSumsStatus === 200) {
-    for (const epochMinerStat of epochProofSums) {
-      const {
-        epoch,
-        miners,
-        proofs,
-        miners_payable,
-        miners_payable_proofs,
-        validator_proofs,
-        miner_payment_total,
-      } = epochMinerStat
-      epochMinerStats[epoch] = {
-        miners,
-        proofs,
-        miners_payable,
-        miners_payable_proofs,
-        validator_proofs,
-        ...(miner_payment_total != undefined && { miner_payment_total }),
+    const { data: transactionsRes, status: transactionsStatus } =
+      await getTransactions({
+        startVersion,
+        limit: TX_PER_PAGE,
+        includeEvents: true,
+      })
+
+    const transactions: TransactionMin[] =
+      transactionsStatus === 200 && transactionsRes.result
+        ? transactionsRes.result
+            .sort((a, b) => b.version - a.version)
+            .map((tx) => getTransactionMin(tx))
+        : []
+
+    const events = []
+
+    if (transactions && transactions.length && transactionsRes.result) {
+      for (const transaction of transactionsRes.result) {
+        events.push(...transaction.events)
       }
     }
-  }
 
-  const validatorsMap = {}
-  const inactiveValidators = []
+    const stats = permissionTreeStatsStatus === 200 ? permissionTreeStats : {}
 
-  if (allValidators && Array.isArray(allValidators)) {
-    inactiveValidators.push(...allValidators.filter(validator => !initialVitals.chain_view.validator_view.find(activeVal => activeVal.account_address.toLowerCase() === validator.address.toLowerCase())))
+    const epochMinerStats = {}
 
-    for (const validator of allValidators) {
-      validatorsMap[validator.address.toLowerCase()] = validator
+    if (epochProofSumsStatus === 200) {
+      for (const epochMinerStat of epochProofSums) {
+        const {
+          epoch,
+          miners,
+          proofs,
+          miners_payable,
+          miners_payable_proofs,
+          validator_proofs,
+          miner_payment_total,
+        } = epochMinerStat
+        epochMinerStats[epoch] = {
+          miners,
+          proofs,
+          miners_payable,
+          miners_payable_proofs,
+          validator_proofs,
+          ...(miner_payment_total != undefined && { miner_payment_total }),
+        }
+      }
     }
-  }
 
-  return {
-    props: {
-      error: false,
-      transactions,
-      events,
-      startVersion,
-      latest,
-      previousIsLatest,
-      initialVitals,
-      stats,
-      epochMinerStats,
-      allValidators,
-      inactiveValidators,
-      validatorsMap,
-      initialConsensusRound: global.consensusRound,
-      initialTab: query.tab || 'dashboard',
-      defaultSortKey: query.sort || 'voting_power',
-      defaultSortOrder: query.order || 'descend',
-    },
-  }
-  } catch(err) {
+    if (epochStatsStatus === 200) {
+      for (const epochStat of epochStats) {
+        const {
+          epoch,
+          total_supply
+        } = epochStat
+        if (epochMinerStats[epoch]) {
+          epochMinerStats[epoch].total_supply = total_supply
+        }
+      }
+    }
+
+    const validatorsMap = {}
+    const inactiveValidators = []
+
+    if (allValidators && Array.isArray(allValidators)) {
+      inactiveValidators.push(
+        ...allValidators.filter(
+          (validator) =>
+            !initialVitals.chain_view.validator_view.find(
+              (activeVal) =>
+                activeVal.account_address.toLowerCase() ===
+                validator.address.toLowerCase()
+            )
+        )
+      )
+
+      for (const validator of allValidators) {
+        validatorsMap[validator.address.toLowerCase()] = validator
+      }
+    }
+
+    return {
+      props: {
+        error: false,
+        transactions,
+        events,
+        startVersion,
+        latest,
+        previousIsLatest,
+        initialVitals,
+        stats,
+        epochMinerStats,
+        allValidators,
+        inactiveValidators,
+        validatorsMap,
+        initialConsensusRound: global.consensusRound,
+        initialTab: query.tab || 'dashboard',
+        defaultSortKey: query.sort || 'voting_power',
+        defaultSortOrder: query.order || 'descend',
+      },
+    }
+  } catch (err) {
     console.error(err)
     return {
       props: {
@@ -481,7 +549,16 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         startVersion: -1,
         latest: true,
         previousIsLatest: false,
-        initialVitals: {chain_view: { height: 0, epoch_progress: 0, validator_count: 0, epoch: 0, total_supply: 0, validator_view: []}},
+        initialVitals: {
+          chain_view: {
+            height: 0,
+            epoch_progress: 0,
+            validator_count: 0,
+            epoch: 0,
+            total_supply: 0,
+            validator_view: [],
+          },
+        },
         stats: {},
         epochMinerStats: {},
         allValidators: [],

@@ -53,7 +53,7 @@
 }
 
 .title {
-  color: white;
+  color: black;
   font-size: 18pt;
   margin-right: 16px;
 }
@@ -129,4 +129,14 @@
   border-radius: 8px;
   height: 118px;
   margin-left: 8px;
+}
+
+.filterBox {
+  padding: 8px;
+  border: 2px solid #e8e9e9;
+  border-radius: 8px;
+}
+
+.selectLink{
+  margin: 8px;
 }

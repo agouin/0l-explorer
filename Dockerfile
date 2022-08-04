@@ -37,4 +37,4 @@ WORKDIR /code
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 
-CMD [ "node", "index.js" ]
+CMD [ "node", "index.js", "--max-old-space-size=4096" ]

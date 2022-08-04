@@ -357,8 +357,6 @@ export interface PermissionNodeMiner {
   version_onboarded: number // Height when validator was onboarded
   epoch_onboarded: number
   generation: number
-  has_tower: boolean // Does miner have tower height > 0 ?
-  is_active: boolean // Has miner submitted proofs in current epoch?
 }
 
 export interface MinerPermissionTreeResponse extends PermissionNodeMiner {
@@ -374,6 +372,9 @@ export interface EpochStatsResponse {
   epoch: number
   height: number
   timestamp: number
+  total_supply: number
+  minted: number
+  burned: number
 }
 
 export interface EpochProofsResponse {

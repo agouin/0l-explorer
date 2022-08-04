@@ -68,6 +68,7 @@ const TransactionPage = ({ transaction }: { transaction: Transaction }) => {
           transaction.events &&
           transaction.events.length > 0 && (
             <EventsTable
+              sortEnabled
               top={<h1 className={classes.address}>Events</h1>}
               events={transaction.events}
             />
@@ -82,14 +83,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { version } = ctx.params
   console.log('Fetching tx', version)
   const versionSingle = Array.isArray(version) ? version[0] : version
-  const {
-    data: transactionRes,
-    status: transactionStatus,
-  } = await getTransactions({
-    startVersion: parseInt(versionSingle),
-    limit: 1,
-    includeEvents: true,
-  })
+  const { data: transactionRes, status: transactionStatus } =
+    await getTransactions({
+      startVersion: parseInt(versionSingle),
+      limit: 1,
+      includeEvents: true,
+    })
 
   return {
     props: {

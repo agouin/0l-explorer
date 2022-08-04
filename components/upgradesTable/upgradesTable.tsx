@@ -75,7 +75,7 @@ const UpgradesTable = ({ vitals, top, bottom }: UpgradesTableProps) => {
             </div>
             <>
               <div className={classes.tableContainer}>
-                <div className={classes.inner}>
+                <div className={votingVals.length === 0 ? classes.innerEmpty : classes.inner}>
                   {top}
                   <Table
                     dataSource={votingVals}

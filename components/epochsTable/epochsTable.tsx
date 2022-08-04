@@ -5,11 +5,14 @@ import API from '../../lib/api/local'
 import { get } from 'lodash'
 import { EpochStatsResponse } from '../../lib/types/0l'
 import { AxiosResponse } from 'axios'
+import { formatCash, numberWithCommas } from '../../lib/utils'
 
 interface Epoch {
   epoch: number
   height: number
 }
+
+
 
 const EpochsTable = ({
   top,
@@ -50,6 +53,20 @@ const EpochsTable = ({
       render: (height) => <a href={`/block/${height}`}>{height}</a>,
     },
     {
+      key: 'total_supply',
+      title: 'Total Supply',
+      width: 150,
+      render: (_, record) => {
+        const minerPaymentTotal = get(
+          epochMinerStats[record.epoch],
+          'total_supply'
+        )
+        if (minerPaymentTotal === undefined || isNaN(minerPaymentTotal))
+          return ''
+        return formatCash(minerPaymentTotal / 1000000)
+      },
+    },
+    {
       key: 'miners',
       title: 'Miners',
       width: 120,
@@ -77,36 +94,46 @@ const EpochsTable = ({
       key: 'miners_payable',
       title: 'Miners Payable',
       width: 120,
-      render: (_, record) => get(epochMinerStats[record.epoch], 'miners_payable') || '',
+      render: (_, record) =>
+        get(epochMinerStats[record.epoch], 'miners_payable') || '',
     },
     {
       key: 'miners_payable_proofs',
       title: 'Miners Payable Proofs',
       width: 120,
-      render: (_, record) => get(epochMinerStats[record.epoch], 'miners_payable_proofs') || '',
+      render: (_, record) =>
+        get(epochMinerStats[record.epoch], 'miners_payable_proofs') || '',
     },
     {
       key: 'validator_proofs',
       title: 'Validator Proofs',
       width: 120,
-      render: (_, record) => get(epochMinerStats[record.epoch], 'validator_proofs') || '',
+      render: (_, record) =>
+        get(epochMinerStats[record.epoch], 'validator_proofs') || '',
     },
     {
       key: 'miner_payment_total',
       title: 'Miner Payment Total',
       width: 150,
       render: (_, record) => {
-        const minerPaymentTotal = get(epochMinerStats[record.epoch], 'miner_payment_total')
-        if (minerPaymentTotal === undefined || isNaN(minerPaymentTotal)) return ''
-        return minerPaymentTotal/1000000
-      }
+        const minerPaymentTotal = get(
+          epochMinerStats[record.epoch],
+          'miner_payment_total'
+        )
+        if (minerPaymentTotal === undefined || isNaN(minerPaymentTotal))
+          return ''
+        return formatCash(minerPaymentTotal / 1000000)
+      },
     },
   ]
 
   const getEpochs = async (start, limit) => {
     setLoading(true)
 
-    const epochsRes: AxiosResponse<EpochStatsResponse[]> = await API.GET('/epochs', { start, limit })
+    const epochsRes: AxiosResponse<EpochStatsResponse[]> = await API.GET(
+      '/epochs',
+      { start, limit }
+    )
 
     if (epochsRes.status !== 200) {
       message.error(`Error getting epochs: ${epochsRes.statusText}`)
@@ -146,7 +173,7 @@ const EpochsTable = ({
 
   return (
     <div className={classes.tableContainer}>
-      <div className={classes.inner}>
+      <div className={epochs.length === 0 ? classes.innerEmpty : classes.inner}>
         {top}
         <Table
           rowKey="epoch"

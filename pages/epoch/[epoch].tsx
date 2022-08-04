@@ -5,6 +5,7 @@ import classes from './epoch.module.scss'
 import {
   getEpochProofSum,
   getEpochHistogram,
+  getEpochStats,
 } from '../../lib/api/permissionTree'
 import {
   EpochProofsResponse,
@@ -13,6 +14,7 @@ import {
 import { Table, Row, Col } from 'antd'
 import { capitalCase } from 'change-case'
 import Chart from 'react-google-charts'
+import { numberWithCommas } from '../../lib/utils'
 
 interface EpochPageProps {
   epoch: number
@@ -40,10 +42,20 @@ const EpochPage = ({ epoch, proofStats, proofHistogram }: EpochPageProps) => {
                 {
                   dataIndex: 'value',
                   title: 'Value',
-                  render: (value, record) =>
-                    record.key === 'miner_payment_total'
-                      ? value / 1000000
-                      : value,
+                  render: (value, record) => {
+                    if (
+                      [
+                        'miner_payment_total',
+                        'total_supply',
+                        'minted',
+                        'burned',
+                      ].indexOf(record.key) >= 0
+                    )
+                      return numberWithCommas(value / 1000000)
+                    if (record.key === 'timestamp')
+                      return new Date(value * 1000).toLocaleString()
+                    return value
+                  },
                 },
               ]}
               dataSource={Object.keys(proofStats)
@@ -66,13 +78,13 @@ const EpochPage = ({ epoch, proofStats, proofHistogram }: EpochPageProps) => {
                   ...proofHistogram.map((point) => [
                     point.proofs,
                     point.count,
-                    point.proofs <= 7 ?  '#b10101': '#449800',
+                    point.proofs <= 7 ? '#b10101' : '#449800',
                   ]),
                 ]}
                 options={{
                   title: 'Miner Proofs',
                   titleTextStyle: {
-                    color: 'white',
+                    color: 'black',
                     fontSize: '20',
                   },
                   backgroundColor: 'transparent',
@@ -125,15 +137,27 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { data: proofStats, status: proofStatus } = await getEpochProofSum(
     epoch
   )
-  const {
-    data: proofHistogram,
-    status: histogramStatus,
-  } = await getEpochHistogram(epoch)
+  const { data: epochStats, status: epochStatus } = await getEpochStats(epoch)
+  const { data: proofHistogram, status: histogramStatus } =
+    await getEpochHistogram(epoch)
+
+  const stats = {}
+
+  if (epochStatus === 200) {
+    for (const key in epochStats) {
+      stats[key] = epochStats[key]
+    }
+  }
+  if (proofStatus === 200) {
+    for (const key in proofStats) {
+      stats[key] = proofStats[key]
+    }
+  }
 
   return {
     props: {
       epoch,
-      proofStats,
+      proofStats: stats,
       proofHistogram,
     },
   }

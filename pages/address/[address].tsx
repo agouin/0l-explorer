@@ -1,7 +1,7 @@
-import { message, Row, Col, Button, Table } from 'antd'
+import { message, Row, Col, Button, Table, Checkbox } from 'antd'
 import { DownloadOutlined } from '@ant-design/icons'
 import { GetServerSideProps } from 'next'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import classes from './address.module.scss'
 import {
   getAccount,
@@ -19,7 +19,7 @@ import {
   MinerEpochStatsResponse,
   ValidatorInfo,
 } from '../../lib/types/0l'
-import { get } from 'lodash'
+import { get, cloneDeep } from 'lodash'
 import TransactionsTable from '../../components/transactionsTable/transactionsTable'
 import { numberWithCommas } from '../../lib/utils'
 import NotFoundPage from '../404'
@@ -29,12 +29,14 @@ import {
   getMinerPermissionTree,
 } from '../../lib/api/permissionTree'
 
-import EventsTable from '../../components/eventsTable/eventsTable'
+import EventsTable, { EventTypes } from '../../components/eventsTable/eventsTable'
 import { pageview, event } from '../../lib/gtag'
 import CommunityWallets from '../../lib/communityWallets'
 import QRCode from 'react-qr-code'
 import API from '../../lib/api/local'
 import communityWallets from '../../lib/communityWallets'
+import { getTransactionMin } from '../../lib/node_utils'
+import { CheckboxChangeEvent } from 'antd/lib/checkbox'
 
 const fallbackCopyTextToClipboard = (text) => {
   var textArea = document.createElement('textarea')
@@ -88,47 +90,235 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
 
   const [pageSize, setPageSize] = useState(20)
 
+  const unfilteredBlocks = useRef<TransactionMin[]>([])
+  const [blockFilters, setBlockFilters] = useState<string[]>([])
+  const [blockFiltersChecked, setBlockFiltersChecked] = useState<{}>([])
+
+  const unfilteredEvents = useRef<Event[]>([])
+  const [eventFilters, setEventFilters] = useState<string[]>([])
+  const [eventFiltersChecked, setEventFiltersChecked] = useState<{}>([])
+
   const [transactions, setTransactions] = useState<TransactionMin[]>([])
   const [events, setEvents] = useState<Event[]>([])
   const [transactionsLoading, setTransactionsLoading] = useState<boolean>(true)
   const [eventsLoading, setEventsLoading] = useState<boolean>(true)
   const [onboardedBy, setOnboardedBy] = useState<string>('')
   const [operatorAccount, setOperatorAccount] = useState<string>('')
-  const [validatorAccountCreatedBy, setValidatorAccountCreatedBy] = useState<
-    string
-  >('')
+  const [validatorAccountCreatedBy, setValidatorAccountCreatedBy] =
+    useState<string>('')
   const [proofHistory, setProofHistory] = useState<MinerEpochStatsResponse[]>(
     []
   )
   const [type, setType] = useState<string>('')
-  const [validatorAutoPayStats, setValidatorAutoPayStats] = useState<
-    ValidatorInfo
-  >(null)
+  const [validatorAutoPayStats, setValidatorAutoPayStats] =
+    useState<ValidatorInfo>(null)
   const [minerEpochOnboarded, setMinerEpochOnboarded] = useState<number>(null)
   const [minerGeneration, setMinerGeneration] = useState<number>(null)
-  const [validatorEpochOnboarded, setValidatorEpochOnboarded] = useState<
-    number
-  >(null)
+  const [validatorEpochOnboarded, setValidatorEpochOnboarded] =
+    useState<number>(null)
   const [validatorGeneration, setValidatorGeneration] = useState<number>(null)
 
-  const getTransactionsAndEvents = async (type: string, address: string) => {
-    const res = await API.GET('/proxy/node/transactions', { type, address })
-    if (res.status !== 200) {
-      message.error(
-        `Error fetching transactions (${res.status} - ${res.statusText})`
-      )
-      setTransactions([])
-      setTransactionsLoading(false)
-      setEvents([])
-      setEventsLoading(false)
-      return
+  const getTransactionsAndEvents = async (type: string, address: string, operatorAccount: string) => {
+    const chunkSize = 1000
+    let txLength = chunkSize,
+      evtLength = chunkSize
+    let currentTx = 0,
+      currentEvt = 0
+    const newTxs = []
+    const newEvts = []
+    const newEventFilters = []
+    const addEventFilter = (eventType) => {
+      if (newEventFilters.indexOf(eventType) >= 0) return
+      newEventFilters.push(eventType)
     }
-    const {
-      data: { transactions, events },
-    } = res
-    setTransactions(transactions)
+    const newBlockFilters = []
+    const addBlockFilter = (type) => {
+      if (newBlockFilters.indexOf(type) >= 0) return
+      newBlockFilters.push(type)
+    }
+    while (txLength === chunkSize || evtLength == chunkSize) {
+      const promises = []
+      if (txLength === chunkSize) {
+        const params = { type, address, start: currentTx, limit: chunkSize }
+        console.log({ params })
+        promises.push(API.GET('/proxy/node/account-transactions', params))
+      } else {
+        promises.push(
+          API.GET('/proxy/node/events', {
+            address,
+            start: currentEvt,
+            limit: chunkSize,
+          })
+        )
+      }
+      const res = await Promise.all(promises)
+      if (txLength === chunkSize) {
+        const txsRes = res[0]
+        if (txsRes.status !== 200) {
+          message.error(
+            `Error fetching transactions (${txsRes.status} - ${txsRes.statusText})`
+          )
+          unfilteredBlocks.current = []
+          setBlockFilters([])
+          setBlockFiltersChecked({})
+          setTransactions([])
+          setTransactionsLoading(false)
+          unfilteredEvents.current = []
+          setEvents([])
+          setEventFilters([])
+          setEventFiltersChecked({})
+          setEventsLoading(false)
+          return
+        }
+        newTxs.unshift(
+          ...txsRes.data.result
+            .sort((a, b) => b.version - a.version)
+            .map((tx) => {
+              if (tx.events && tx.events.length) {
+                const events = tx.events.filter(
+                  (event) => event.data.type === 'sentpayment'
+                )
+                addEventFilter('sentpayment')
+                newEvts.unshift(...events)
+              }
+              const txMin = getTransactionMin(tx)
+              addBlockFilter(txMin.type)
+              return txMin
+            })
+        )
+        txLength = txsRes.data.result.length
+        currentTx += txLength
+        if (evtLength === chunkSize) {
+          const evtsRes = res[1]
+          console.log({ evtsRes })
+          if (evtsRes) {
+            if (evtsRes.status !== 200) {
+              message.error(
+                `Error fetching events (${evtsRes.status} - ${evtsRes.statusText})`
+              )
+              unfilteredBlocks.current = []
+              setBlockFilters([])
+              setBlockFiltersChecked({})
+              setTransactions([])
+              setTransactionsLoading(false)
+              unfilteredEvents.current = []
+              setEvents([])
+              setEventFilters([])
+              setEventFiltersChecked({})
+              setEventsLoading(false)
+              return
+            }
+            for (const event of evtsRes.data.result) {
+              if (get(event, 'data.sender') === '00000000000000000000000000000000' && event.data.type === 'receivedpayment') {
+                event.data.type = 'Received Reward'
+              }
+              addEventFilter(event.data.type)
+            }
+            newEvts.unshift(...evtsRes.data.result)
+            evtLength = evtsRes.data.result.length
+            currentEvt += evtLength
+          }
+        }
+      } else {
+        const evtsRes = res[0]
+        if (evtsRes.status !== 200) {
+          message.error(
+            `Error fetching events (${evtsRes.status} - ${evtsRes.statusText})`
+          )
+          unfilteredBlocks.current = []
+          setBlockFilters([])
+          setBlockFiltersChecked({})
+          setTransactions([])
+          setTransactionsLoading(false)
+          unfilteredEvents.current = []
+          setEvents([])
+          setEventFilters([])
+          setEventFiltersChecked({})
+          setEventsLoading(false)
+          return
+        }
+        for (const event of evtsRes.data.result) {
+          if (get(event, 'data.sender') === '00000000000000000000000000000000' && event.data.type === 'receivedpayment') {
+            event.data.type = 'Received Reward'
+          }
+          addEventFilter(event.data.type)
+        }
+        newEvts.unshift(...evtsRes.data.result)
+        evtLength = evtsRes.data.result.length
+        currentEvt += evtLength
+      }
+    }
+
+    if (type === 'Validator') {
+      const epochEvtsRes = await API.GET('/proxy/node/epoch-events', {
+        address,
+      })
+      if (epochEvtsRes.status !== 200) {
+        message.error(
+          `Error fetching epoch events (${epochEvtsRes.status} - ${epochEvtsRes.statusText})`
+        )
+        unfilteredBlocks.current = []
+        setBlockFilters([])
+        setBlockFiltersChecked({})
+        setTransactions([])
+        setTransactionsLoading(false)
+        unfilteredEvents.current = []
+        setEvents([])
+        setEventFilters([])
+        setEventFiltersChecked({})
+        setEventsLoading(false)
+        return
+      }
+
+      for (const evt of epochEvtsRes.data) {
+        if (evt.data.sender === evt.data.receiver) {
+          evt.data.type = 'Burn'
+        } else if (evt.data.receiver.toLowerCase() == operatorAccount.toLowerCase()) {
+          evt.data.type = 'Operator Refill'
+        } else {
+          evt.data.type = 'AutoPay'
+        }
+        addEventFilter(evt.data.type)
+      }
+
+      newEvts.unshift(...epochEvtsRes.data)
+    }
+
+    const versionTimestamps = {}
+
+    for (const tx of newTxs) {
+      versionTimestamps[tx.version] = tx.timestamp
+    }
+
+    for (const evt of newEvts) {
+      if (evt.timestamp) {
+        continue
+      }
+      evt.timestamp = versionTimestamps[evt.transaction_version]
+    }
+
+    const eventFiltersMap = {}
+    for (const evt of newEventFilters) {
+      eventFiltersMap[evt] = true
+    }
+
+    const blockFiltersMap = {}
+    for (const block of newBlockFilters) {
+      blockFiltersMap[block] = true
+    }
+    
+    setBlockFiltersChecked(blockFiltersMap)
+    setBlockFilters(newBlockFilters.sort())
+
+    setEventFiltersChecked(eventFiltersMap)
+    setEventFilters(newEventFilters.sort())
+
+    unfilteredBlocks.current = newTxs
+    setTransactions(cloneDeep(newTxs))
+    unfilteredEvents.current = newEvts.sort((a, b) => b.transaction_version - a.transaction_version)
+    setEvents(cloneDeep(unfilteredEvents.current))
+
     setTransactionsLoading(false)
-    setEvents(events)
     setEventsLoading(false)
   }
 
@@ -275,7 +465,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
       ? 'Community Wallet'
       : ''
 
-    getTransactionsAndEvents(type, lowercaseAddress)
+    getTransactionsAndEvents(type, lowercaseAddress, operatorAccount)
 
     if (operatorAccount) {
       const operatorProofsRes = await getMinerProofHistory(
@@ -284,11 +474,11 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
       if (operatorProofsRes.status === 200 && operatorProofsRes.data) {
         if (!proofHistoryRes) {
           if (operatorProofsRes.data.length > 0) {
-            if (operatorProofsRes.data[0].epoch == lastEpochMined) operatorProofsRes.data.splice(0, 1)
+            if (operatorProofsRes.data[0].epoch == lastEpochMined)
+              operatorProofsRes.data.splice(0, 1)
             setProofHistory(operatorProofsRes.data)
           }
-        }
-        else {
+        } else {
           const proofs = proofHistoryRes
           for (const proof of operatorProofsRes.data) {
             let index = proofs.findIndex(
@@ -297,7 +487,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
             if (index !== -1) proofs[index].count += proof.count
             else proofs.push(proof)
           }
-         
+
           if (proofs.length > 0) {
             proofs.sort((a, b) => b.epoch - a.epoch)
             if (proofs[0].epoch == lastEpochMined) proofs.splice(0, 1)
@@ -307,7 +497,8 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
       }
     } else if (proofHistoryRes) {
       if (proofHistoryRes.length > 0) {
-        if (proofHistoryRes[0].epoch == lastEpochMined) proofHistoryRes.splice(0, 1)
+        if (proofHistoryRes[0].epoch == lastEpochMined)
+          proofHistoryRes.splice(0, 1)
         setProofHistory(proofHistoryRes)
       }
     }
@@ -326,7 +517,10 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
   useEffect(() => {
     pageview('/address', 'address')
     if (account && account.address) {
-      lazyLoad(account.address.toLowerCase(), towerState ? towerState.latest_epoch_mining : 0)
+      lazyLoad(
+        account.address.toLowerCase(),
+        towerState ? towerState.latest_epoch_mining : 0
+      )
     }
     if (errors.length > 0) {
       console.error(errors)
@@ -359,7 +553,9 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
               className={classes.address}
               onClick={copyTextToClipboard.bind(this, account.address)}>
               Address:{' '}
-              <span className={classes.addressText}>{get(account, 'address', '').toUpperCase()}</span>
+              <span className={classes.addressText}>
+                {get(account, 'address', '').toUpperCase()}
+              </span>
             </h1>
             <div className={classes.qrContainer}>
               <div>
@@ -461,7 +657,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                   size={100}
                   fgColor="#000"
                   bgColor="#fff"
-                  level={"M"}
+                  level={'M'}
                   value={`https://0lexplorer.io/address/${account.address}`}
                 />
               </div>
@@ -474,7 +670,9 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                   <span className={classes.addressText}>Genesis</span>
                 ) : (
                   <a href={`/address/${onboardedBy}`}>
-                    <span className={classes.addressText}>{onboardedBy ? onboardedBy.toUpperCase() : ''}</span>
+                    <span className={classes.addressText}>
+                      {onboardedBy ? onboardedBy.toUpperCase() : ''}
+                    </span>
                   </a>
                 )}
               </h1>
@@ -487,7 +685,9 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                   Created by Validator:{' '}
                   <a href={`/address/${validatorAccountCreatedBy}`}>
                     <span className={classes.addressText}>
-                      {validatorAccountCreatedBy? validatorAccountCreatedBy.toUpperCase() : ''}
+                      {validatorAccountCreatedBy
+                        ? validatorAccountCreatedBy.toUpperCase()
+                        : ''}
                     </span>
                   </a>
                 </h1>
@@ -497,7 +697,9 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                 {towerState ? 'Operator' : 'Validator'}
                 {' Account: '}
                 <a href={`/address/${operatorAccount}`}>
-                  <span className={classes.addressText}>{operatorAccount ? operatorAccount.toUpperCase() : ''}</span>
+                  <span className={classes.addressText}>
+                    {operatorAccount ? operatorAccount.toUpperCase() : ''}
+                  </span>
                 </a>
               </h1>
             )}
@@ -588,7 +790,9 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
             <h1 className={classes.onboardedBy}>
               Total Recurring:{' '}
               <span className={classes.addressText}>
-                {(get(validatorAutoPayStats,'autopay.recurring_sum', 0) / 100).toFixed(2)}
+                {(
+                  get(validatorAutoPayStats, 'autopay.recurring_sum', 0) / 100
+                ).toFixed(2)}
                 %
               </span>
             </h1>
@@ -600,13 +804,19 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                   title: 'Community Wallet',
                   dataIndex: 'payee',
                   render: (address) => (
-                    <a href={`/address/${address}`}>{communityWallets[address] ? communityWallets[address].text : address ? address.toUpperCase() : ''}</a>
+                    <a href={`/address/${address}`}>
+                      {communityWallets[address]
+                        ? communityWallets[address].text
+                        : address
+                        ? address.toUpperCase()
+                        : ''}
+                    </a>
                   ),
                 },
                 { title: 'Amount', dataIndex: 'amount' },
                 { title: 'End Epoch', dataIndex: 'end_epoch' },
               ]}
-              dataSource={get(validatorAutoPayStats,'autopay.payments') || []}
+              dataSource={get(validatorAutoPayStats, 'autopay.payments') || []}
               pagination={{
                 pageSize: 5,
                 showSizeChanger: false,
@@ -620,6 +830,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
       <Row>
         <Col xs={24} sm={24} md={24} lg={13}>
           <TransactionsTable
+            sortEnabled
             transactions={transactions}
             loading={transactionsLoading}
             pagination={{ pageSize, onChange: onPaginationChange }}
@@ -627,7 +838,32 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
               <div>
                 <div className={classes.outerHeader}>
                   <div className={classes.header}>
-                    <span className={classes.title}>Blocks</span>
+                    <span className={classes.title}>Tx</span>
+                    {blockFilters.length > 0 &&
+                    <div className={classes.filterBox}>
+                       <a  className={classes.selectLink} onClick={()=> {
+                        for (const type of blockFilters) {
+                          blockFiltersChecked[type] = true
+                        }
+                        setBlockFiltersChecked(cloneDeep(blockFiltersChecked))
+                        setTransactions(unfilteredBlocks.current)
+                      }}>Select All</a>
+                      <a className={classes.selectLink} onClick={()=> {
+                        for (const type of blockFilters) {
+                          blockFiltersChecked[type] = false
+                        }
+                        setBlockFiltersChecked(cloneDeep(blockFiltersChecked))
+                        setTransactions([])
+                      }}>Deselect All</a>
+                      {blockFilters.map((type, i) => {
+                        return <Checkbox key={`blockFilterCheckbox${i}`} checked={blockFiltersChecked[type]} onChange={(e: CheckboxChangeEvent) => {
+                          blockFiltersChecked[type] = e.target.checked
+                          setBlockFiltersChecked(cloneDeep(blockFiltersChecked))
+                          setTransactions(unfilteredBlocks.current.filter(e => blockFiltersChecked[e.type]))
+                        }}>{type}</Checkbox>
+                      })}
+
+                    </div>}
                   </div>
                   <div></div>
                 </div>
@@ -637,11 +873,36 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
         </Col>
         <Col xs={24} sm={24} md={24} lg={11}>
           <EventsTable
+            sortEnabled
             top={
               <div>
                 <div className={classes.outerHeader}>
                   <div className={classes.header}>
                     <span className={classes.title}>Events</span>
+                    {eventFilters.length > 0 &&
+                    <div className={classes.filterBox}>
+                       <a  className={classes.selectLink} onClick={()=> {
+                        for (const type of eventFilters) {
+                          eventFiltersChecked[type] = true
+                        }
+                        setEventFiltersChecked(cloneDeep(eventFiltersChecked))
+                        setEvents(unfilteredEvents.current)
+                      }}>Select All</a>
+                      <a className={classes.selectLink} onClick={()=> {
+                        for (const type of eventFilters) {
+                          eventFiltersChecked[type] = false
+                        }
+                        setEventFiltersChecked(cloneDeep(eventFiltersChecked))
+                        setEvents([])
+                      }}>Deselect All</a>
+                      {eventFilters.map((eventType, i) => {
+                        return <Checkbox key={`eventFilterCheckbox${i}`} checked={eventFiltersChecked[eventType]} onChange={(e: CheckboxChangeEvent) => {
+                          eventFiltersChecked[eventType] = e.target.checked
+                          setEventFiltersChecked(cloneDeep(eventFiltersChecked))
+                          setEvents(unfilteredEvents.current.filter(e => eventFiltersChecked[e.data.type]))
+                        }}>{EventTypes[eventType] || eventType}</Checkbox>
+                      })}
+                    </div>}
                   </div>
                   <div></div>
                 </div>

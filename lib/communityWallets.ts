@@ -59,5 +59,8 @@ export default {
       link:
         'https://0l.network/community/community-programs/deep-technology-innovation-program',
     },
+    '87dc2e497ac6edab21511333a421e5a5':{
+      text: 'Working Group Key Roles',
+    },
   }
   
