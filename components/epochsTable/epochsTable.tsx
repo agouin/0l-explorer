@@ -87,6 +87,7 @@ const EpochsTable = ({
         if (!proofs) return ''
         const miners = get(epochMinerStats[record.epoch], 'miners')
         if (!miners) return ''
+        if (proofs === 'Updating' || miners === 'Updating') return 'Updating'
         return (proofs / miners).toFixed(1)
       },
     },
@@ -120,6 +121,7 @@ const EpochsTable = ({
           epochMinerStats[record.epoch],
           'miner_payment_total'
         )
+        if (minerPaymentTotal === 'Updating') return minerPaymentTotal
         if (minerPaymentTotal === undefined || isNaN(minerPaymentTotal))
           return ''
         return formatCash(minerPaymentTotal / 1000000)

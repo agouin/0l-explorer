@@ -247,6 +247,9 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
         evtLength = evtsRes.data.result.length
         currentEvt += evtLength
       }
+
+      setTransactions(cloneDeep(newTxs))
+      setEvents(cloneDeep(newEvts))
     }
 
     if (type === 'Validator') {
@@ -716,7 +719,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                     type="primary"
                     onClick={trackDownloadProofs}>
                     <DownloadOutlined />
-                    VDF Proofs
+                    Latest VDF Proof
                   </Button>
                 </a>
               </div>

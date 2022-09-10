@@ -23,6 +23,16 @@ export const Sorter = (getField) => (a, b) => {
   return 0
 }
 
+export const decimalToHex = (d, padding) => {
+  var hex = Number(d).toString(16);
+
+  while (hex.length < padding) {
+      hex = "0" + hex;
+  }
+
+  return hex;
+}
+
 export const formatCash = n => {
   if (n < 1e3) return n;
   if (n >= 1e3 && n < 1e6) return +(n / 1e3).toFixed(3) + "K";

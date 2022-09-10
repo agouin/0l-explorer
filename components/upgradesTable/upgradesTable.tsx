@@ -3,6 +3,7 @@ import { Vitals } from '../../lib/types/0l'
 import classes from './upgradesTable.module.scss'
 import { ReactNode } from 'react'
 import { isEqual } from 'lodash'
+import { decimalToHex } from '../../lib/utils'
 
 interface UpgradesTableProps {
   vitals: Vitals
@@ -56,7 +57,7 @@ const UpgradesTable = ({ vitals, top, bottom }: UpgradesTableProps) => {
                     <span className={classes.infoText}>
                       Hash:{' '}
                       <span className={classes.thinText}>
-                        {proposal.hash.map((x) => x.toString(16)).join('')}
+                        {proposal.hash.map((x) => decimalToHex(x, 2)).join('')}
                       </span>
                     </span>
                   </Tooltip>
