@@ -424,7 +424,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       getEpochsStats(),
       getValidators(),
     ])
-    if (metadataStatus !== 200) return { props: {} }
+    if (metadataStatus !== 200 || metadataRes.error) return { props: {} }
     const {
       result: { version },
     } = metadataRes
