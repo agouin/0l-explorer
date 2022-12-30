@@ -10,10 +10,12 @@ import {
 import { AxiosResponse } from 'axios'
 import {
   getTransactions as getTransactionsJS,
+  getRecentTransactions as getRecentTransactionsJS,
   getTransaction as getTransactionJS,
   getAccount as getAccountJS,
   getAccountTransaction as getAccountTransactionJS,
   getAccountTransactions as getAccountTransactionsJS,
+  getRecentAccountTransactions as getRecentAccountTransactionsJS,
   getMetadata as getMetadataJS,
   getEvents as getEventsJS,
   getCurrencies as getCurrenciesJS,
@@ -25,6 +27,12 @@ export const getTransactions = (body: {
   limit: number
   includeEvents: boolean
 }): Promise<AxiosResponse<TransactionsResponse>> => getTransactionsJS(body)
+
+export const getRecentTransactions = (body: {
+  startVersion: number
+  limit: number
+  includeEvents: boolean
+}): Promise<AxiosResponse<TransactionsResponse>> => getRecentTransactionsJS(body)
 
 export const getTransaction = (body: {
   hash: string
@@ -48,6 +56,14 @@ export const getAccountTransactions = (body: {
   includeEvents: boolean
 }): Promise<AxiosResponse<TransactionsResponse>> =>
   getAccountTransactionsJS(body)
+
+export const getRecentAccountTransactions = (body: {
+  account: string
+  start: number
+  limit: number
+  includeEvents: boolean
+}): Promise<AxiosResponse<TransactionsResponse>> =>
+  getRecentAccountTransactionsJS(body)
 
 export const getMetadata = (body: {
   version?: number

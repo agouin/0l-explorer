@@ -12,6 +12,7 @@ import {
 import {
   getStats as getStatsJS,
   getValidatorPermissionTree as getValidatorPermissionTreeJS,
+  getOperatorPermissionTree as getOperatorPermissionTreeJS,
   getValidators as getValidatorsJS,
   getMinerPermissionTree as getMinerPermissionTreeJS,
   getMinerProofHistory as getMinerProofHistoryJS,
@@ -29,6 +30,11 @@ export const getValidatorPermissionTree = async (
   address: string
 ): Promise<AxiosResponse<ValidatorPermissionTreeResponse>> =>
   getValidatorPermissionTreeJS(address)
+
+export const getOperatorPermissionTree = async (
+  address: string
+): Promise<AxiosResponse<ValidatorPermissionTreeResponse>> =>
+  getOperatorPermissionTreeJS(address)
 
 export const getValidators = async (): Promise<
   AxiosResponse<PermissionNodeValidator[]>

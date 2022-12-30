@@ -34,12 +34,12 @@ const EventColumns = (sortEnabled) => [
     render: (text) => <a href={`/block/${text}`}>{text}</a>,
   },
   {
-    key: 'timestamp',
+    key: 'timestamp_usecs',
     width: 230,
     title: 'Timestamp',
-    dataIndex: 'timestamp',
+    dataIndex: 'timestamp_usecs',
     sorter: sortEnabled
-      ? Sorter((record) => get(record, 'timestamp') || 0)
+      ? Sorter((record) => get(record, 'timestamp_usecs') || 0)
       : undefined,
     render: (timestamp) =>
       timestamp ? new Date(timestamp / 1000).toLocaleString() : '',

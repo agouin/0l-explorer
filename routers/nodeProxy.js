@@ -2,11 +2,11 @@ const Router = require('@koa/router')
 const {
   NodeAPI,
   getAccountTransactions,
+  getRecentAccountTransactions,
   getTransactions,
   getEvents,
 } = require('../lib/api/node.js')
 const { getEpochsStats } = require('../lib/api/permissionTree.js')
-const { getTransactionMin } = require('../lib/node_utils.js')
 const { get } = require('lodash')
 
 const router = new Router({ prefix: '/api/proxy/node' })
@@ -21,6 +21,18 @@ router.post('(.*)', async (ctx) => {
 router.get('/account-transactions', async (ctx) => {
   const { start, limit, address } = ctx.query
   const { data, status } = await getAccountTransactions({
+    account: address,
+    start: parseInt(start),
+    limit: parseInt(limit),
+    includeEvents: true,
+  })
+  ctx.status = status
+  ctx.body = data
+})
+
+router.get('/recent-account-transactions', async (ctx) => {
+  const { start, limit, address } = ctx.query
+  const { data, status } = await getRecentAccountTransactions({
     account: address,
     start: parseInt(start),
     limit: parseInt(limit),

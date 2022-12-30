@@ -30,6 +30,11 @@ const TransactionView = ({
     title: string
     value: ReactNode | string | undefined
   }[] = [
+    {
+      key: 'timestamp_usecs',
+      title: 'Timestamp',
+      value: new Date(transaction.timestamp_usecs / 1000).toLocaleString(),
+    },
     { key: 'version', title: 'Version', value: transaction.version },
     { key: 'hash', title: 'Hash', value: transaction.hash },
     { key: 'type', title: 'Type', value: tx.type },
@@ -85,22 +90,13 @@ const TransactionView = ({
 
   switch (tx.type) {
     case 'blockmetadata':
-      info.push({
-        key: 'timestamp_usecs',
-        title: 'Timestamp',
-        value: new Date(tx.timestamp_usecs / 1000).toLocaleString(),
-      })
+      
       break
     case 'user':
   
       const script_function = get(tx, 'script.function_name')
       
       if (script_function) {
-        info.unshift({
-          key: 'timestamp_usecs',
-          title: 'Timestamp',
-          value: new Date(getTimestamp(tx.expiration_timestamp_secs, script_function) / 1000).toLocaleString(),
-        })
         info.push({
           key: 'script_function',
           title: 'Script Function',
