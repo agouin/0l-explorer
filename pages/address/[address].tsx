@@ -139,14 +139,16 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
       if (newBlockFilters.indexOf(type) >= 0) return
       newBlockFilters.push(type)
     }
-    while (txLength === chunkSize || evtLength == chunkSize) {
+    let txsProcessing = txLength === chunkSize
+    let evtsProcessing = evtLength === chunkSize
+    while (txsProcessing || evtsProcessing) {
       const promises = []
-      if (txLength === chunkSize) {
+      if (txsProcessing) {
         const params = { type, address, start: currentTx, limit: chunkSize }
         console.log({ params })
         promises.push(API.GET('/proxy/node/recent-account-transactions', params))
-      } 
-      if (evtLength == chunkSize) {
+      }
+      if (evtsProcessing) {
         promises.push(
           API.GET('/proxy/node/events', {
             address,
@@ -156,24 +158,14 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
         )
       }
       const res = await Promise.all(promises)
-      if (txLength === chunkSize) {
-        const txsRes = res[0]
+
+      const processTransactions = async (txsRes) => {
         if (txsRes.status !== 200) {
           message.error(
             `Error fetching transactions (${txsRes.status} - ${txsRes.statusText})`
           )
-          unfilteredBlocks.current = []
-          setBlockFilters([])
-          setBlockFiltersChecked({})
-          setTransactions([])
           setTransactionsLoading(false)
           setTransactionsSubLoading(false)
-          unfilteredEvents.current = []
-          setEvents([])
-          setEventFilters([])
-          setEventFiltersChecked({})
-          setEventsLoading(false)
-          setEventsSubLoading(false)
           return
         }
         newTxs.push(
@@ -193,56 +185,33 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
             })
         )
         txLength = txsRes.data.result.length
+        txsProcessing = txLength === chunkSize
         currentTx += txLength
-        if (evtLength === chunkSize) {
-          const evtsRes = res[1]
-          console.log({ evtsRes })
-          if (evtsRes) {
-            if (evtsRes.status !== 200) {
-              message.error(
-                `Error fetching events (${evtsRes.status} - ${evtsRes.statusText})`
-              )
-              unfilteredBlocks.current = []
-              setBlockFilters([])
-              setBlockFiltersChecked({})
-              setTransactions([])
-              setTransactionsLoading(false)
-              setTransactionsSubLoading(false)
-              unfilteredEvents.current = []
-              setEvents([])
-              setEventFilters([])
-              setEventFiltersChecked({})
-              setEventsLoading(false)
-              setEventsSubLoading(false)
-              return
-            }
-            for (const event of evtsRes.data.result) {
-              if (get(event, 'data.sender') === '00000000000000000000000000000000' && event.data.type === 'receivedpayment') {
-                event.data.type = 'Received Reward'
-              }
-              addEventFilter(event.data.type)
-            }
-            newEvts.unshift(...evtsRes.data.result)
-            evtLength = evtsRes.data.result.length
-            currentEvt += evtLength
+
+        setTransactions(cloneDeep(newTxs))
+        if (!txsProcessing) {
+          const blockFiltersMap = {}
+          for (const block of newBlockFilters) {
+            blockFiltersMap[block] = true
           }
+          
+          setBlockFiltersChecked(blockFiltersMap)
+          setBlockFilters(newBlockFilters.sort())
+      
+          unfilteredBlocks.current = newTxs
+      
+          setTransactionsLoading(false)
+          setTransactionsSubLoading(false)
+        } else {
+          setTransactionsLoading(false)
         }
-      } else {
-        const evtsRes = res[0]
+      }
+
+      const processEvents = async (evtsRes) => {
         if (evtsRes.status !== 200) {
           message.error(
             `Error fetching events (${evtsRes.status} - ${evtsRes.statusText})`
           )
-          unfilteredBlocks.current = []
-          setBlockFilters([])
-          setBlockFiltersChecked({})
-          setTransactions([])
-          setTransactionsLoading(false)
-          setTransactionsSubLoading(false)
-          unfilteredEvents.current = []
-          setEvents([])
-          setEventFilters([])
-          setEventFiltersChecked({})
           setEventsLoading(false)
           setEventsSubLoading(false)
           return
@@ -255,77 +224,67 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
         }
         newEvts.unshift(...evtsRes.data.result)
         evtLength = evtsRes.data.result.length
+        evtsProcessing = evtLength === chunkSize
         currentEvt += evtLength
-      }
 
-      setTransactions(cloneDeep(newTxs))
-      setEvents(cloneDeep(newEvts))
-      setTransactionsLoading(false)
-      setEventsLoading(false)
-    }
+        unfilteredEvents.current = newEvts.sort((a, b) => b.transaction_version - a.transaction_version)
+        setEvents(cloneDeep(unfilteredEvents.current))
 
-    if (type === 'Validator') {
-      const epochEvtsRes = await API.GET('/proxy/node/epoch-events', {
-        address,
-      })
-      if (epochEvtsRes.status !== 200) {
-        message.error(
-          `Error fetching epoch events (${epochEvtsRes.status} - ${epochEvtsRes.statusText})`
-        )
-        unfilteredBlocks.current = []
-        setBlockFilters([])
-        setBlockFiltersChecked({})
-        setTransactions([])
-        setTransactionsLoading(false)
-        setTransactionsSubLoading(false)
-        unfilteredEvents.current = []
-        setEvents([])
-        setEventFilters([])
-        setEventFiltersChecked({})
-        setEventsLoading(false)
-        setEventsSubLoading(false)
-        return
-      }
+        if (!evtsProcessing) {
+          if (type === 'Validator') {
+            const epochEvtsRes = await API.GET('/proxy/node/epoch-events', {
+              address,
+            })
+            if (epochEvtsRes.status !== 200) {
+              message.error(
+                `Error fetching epoch events (${epochEvtsRes.status} - ${epochEvtsRes.statusText})`
+              )
+              unfilteredEvents.current = []
+              setEventsLoading(false)
+              setEventsSubLoading(false)
+              return
+            }
+      
+            for (const evt of epochEvtsRes.data) {
+              if (evt.data.sender === evt.data.receiver) {
+                evt.data.type = 'Burn'
+              } else if (evt.data.receiver.toLowerCase() == operatorAccount.toLowerCase()) {
+                evt.data.type = 'Operator Refill'
+              } else {
+                evt.data.type = 'AutoPay'
+              }
+              addEventFilter(evt.data.type)
+            }
+      
+            newEvts.unshift(...epochEvtsRes.data)
+          }
 
-      for (const evt of epochEvtsRes.data) {
-        if (evt.data.sender === evt.data.receiver) {
-          evt.data.type = 'Burn'
-        } else if (evt.data.receiver.toLowerCase() == operatorAccount.toLowerCase()) {
-          evt.data.type = 'Operator Refill'
+          const eventFiltersMap = {}
+          for (const evt of newEventFilters) {
+            eventFiltersMap[evt] = true
+          }
+
+          setEventFiltersChecked(eventFiltersMap)
+          setEventFilters(newEventFilters.sort())
+
+          setEventsLoading(false)
+          setEventsSubLoading(false)
+
         } else {
-          evt.data.type = 'AutoPay'
+          setEventsLoading(false)
         }
-        addEventFilter(evt.data.type)
       }
 
-      newEvts.unshift(...epochEvtsRes.data)
+      if (txsProcessing) {
+        await processTransactions(res[0])
+
+        if (evtsProcessing) {
+          await processEvents(res[1])
+        }
+      } else if (evtsProcessing) {
+        await processEvents(res[0])
+      }
     }
-
-    const eventFiltersMap = {}
-    for (const evt of newEventFilters) {
-      eventFiltersMap[evt] = true
-    }
-
-    const blockFiltersMap = {}
-    for (const block of newBlockFilters) {
-      blockFiltersMap[block] = true
-    }
-    
-    setBlockFiltersChecked(blockFiltersMap)
-    setBlockFilters(newBlockFilters.sort())
-
-    setEventFiltersChecked(eventFiltersMap)
-    setEventFilters(newEventFilters.sort())
-
-    unfilteredBlocks.current = newTxs
-    setTransactions(cloneDeep(newTxs))
-    unfilteredEvents.current = newEvts.sort((a, b) => b.transaction_version - a.transaction_version)
-    setEvents(cloneDeep(unfilteredEvents.current))
-
-    setTransactionsLoading(false)
-    setTransactionsSubLoading(false)
-    setEventsLoading(false)
-    setEventsSubLoading(false)
   }
 
   const lazyLoad = async (lowercaseAddress, lastEpochMined) => {
