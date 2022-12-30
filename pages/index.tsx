@@ -1,6 +1,6 @@
 import NavLayout from '../components/navLayout/navLayout'
 import { GetServerSideProps } from 'next'
-import { getTransactions, getMetadata } from '../lib/api/node'
+import { getTransactions, getRecentTransactions, getMetadata } from '../lib/api/node'
 import { CaretLeftFilled, CaretRightFilled } from '@ant-design/icons'
 import {
   getTransactionMin,
@@ -429,22 +429,42 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       result: { version },
     } = metadataRes
 
+    let latest = false
     if (startVersion === undefined || isNaN(startVersion)) {
-      startVersion = version - TX_PER_PAGE + 10
+      latest = true
+      startVersion = version - TX_PER_PAGE
     }
 
-    if (startVersion < MIN_VERSION) startVersion = MIN_VERSION
-    else if (startVersion > version) startVersion = version - TX_PER_PAGE + 10
+    if (!latest) {
+      if (startVersion < MIN_VERSION) startVersion = MIN_VERSION
+      else if (startVersion > version) latest = true
+    }
 
-    const latest = startVersion + TX_PER_PAGE > version
     const previousIsLatest = startVersion + 2 * TX_PER_PAGE > version
 
-    const { data: transactionsRes, status: transactionsStatus } =
+    let transactionsRes, transactionsStatus
+
+    if (latest) {
+      const { data, status } =
+      await getRecentTransactions({
+        startVersion: 0,
+        limit: TX_PER_PAGE,
+        includeEvents: true,
+      })
+      transactionsRes = data
+      transactionsStatus = status
+    } else {
+      const { data, status } =
       await getTransactions({
         startVersion,
         limit: TX_PER_PAGE,
         includeEvents: true,
       })
+      transactionsRes = data
+      transactionsStatus = status
+    }
+
+    console.log({transactionsRes: transactionsRes.result})
 
     const transactions: TransactionMin[] =
       transactionsStatus === 200 && transactionsRes.result

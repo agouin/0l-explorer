@@ -149,6 +149,7 @@ export interface VMStatusMiscellaneousError extends VMStatus {
 
 export interface Transaction {
   version: number
+  timestamp_usecs: number
   transaction:
     | BlockMetadataTransaction
     | WriteSetTransaction

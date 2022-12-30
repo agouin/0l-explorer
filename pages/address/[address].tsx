@@ -1,5 +1,5 @@
-import { message, Row, Col, Button, Table, Checkbox } from 'antd'
-import { DownloadOutlined } from '@ant-design/icons'
+import { message, Row, Col, Button, Table, Checkbox, Spin } from 'antd'
+import { DownloadOutlined, LoadingOutlined } from '@ant-design/icons'
 import { GetServerSideProps } from 'next'
 import { useEffect, useRef, useState } from 'react'
 import classes from './address.module.scss'
@@ -27,6 +27,7 @@ import {
   getMinerProofHistory,
   getValidatorPermissionTree,
   getMinerPermissionTree,
+  getOperatorPermissionTree,
 } from '../../lib/api/permissionTree'
 
 import EventsTable, { EventTypes } from '../../components/eventsTable/eventsTable'
@@ -102,6 +103,8 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
   const [events, setEvents] = useState<Event[]>([])
   const [transactionsLoading, setTransactionsLoading] = useState<boolean>(true)
   const [eventsLoading, setEventsLoading] = useState<boolean>(true)
+  const [transactionsSubLoading, setTransactionsSubLoading] = useState<boolean>(true)
+  const [eventsSubLoading, setEventsSubLoading] = useState<boolean>(true)
   const [onboardedBy, setOnboardedBy] = useState<string>('')
   const [operatorAccount, setOperatorAccount] = useState<string>('')
   const [validatorAccountCreatedBy, setValidatorAccountCreatedBy] =
@@ -141,8 +144,9 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
       if (txLength === chunkSize) {
         const params = { type, address, start: currentTx, limit: chunkSize }
         console.log({ params })
-        promises.push(API.GET('/proxy/node/account-transactions', params))
-      } else {
+        promises.push(API.GET('/proxy/node/recent-account-transactions', params))
+      } 
+      if (evtLength == chunkSize) {
         promises.push(
           API.GET('/proxy/node/events', {
             address,
@@ -163,14 +167,16 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
           setBlockFiltersChecked({})
           setTransactions([])
           setTransactionsLoading(false)
+          setTransactionsSubLoading(false)
           unfilteredEvents.current = []
           setEvents([])
           setEventFilters([])
           setEventFiltersChecked({})
           setEventsLoading(false)
+          setEventsSubLoading(false)
           return
         }
-        newTxs.unshift(
+        newTxs.push(
           ...txsRes.data.result
             .sort((a, b) => b.version - a.version)
             .map((tx) => {
@@ -201,11 +207,13 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
               setBlockFiltersChecked({})
               setTransactions([])
               setTransactionsLoading(false)
+              setTransactionsSubLoading(false)
               unfilteredEvents.current = []
               setEvents([])
               setEventFilters([])
               setEventFiltersChecked({})
               setEventsLoading(false)
+              setEventsSubLoading(false)
               return
             }
             for (const event of evtsRes.data.result) {
@@ -230,11 +238,13 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
           setBlockFiltersChecked({})
           setTransactions([])
           setTransactionsLoading(false)
+          setTransactionsSubLoading(false)
           unfilteredEvents.current = []
           setEvents([])
           setEventFilters([])
           setEventFiltersChecked({})
           setEventsLoading(false)
+          setEventsSubLoading(false)
           return
         }
         for (const event of evtsRes.data.result) {
@@ -250,6 +260,8 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
 
       setTransactions(cloneDeep(newTxs))
       setEvents(cloneDeep(newEvts))
+      setTransactionsLoading(false)
+      setEventsLoading(false)
     }
 
     if (type === 'Validator') {
@@ -265,11 +277,13 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
         setBlockFiltersChecked({})
         setTransactions([])
         setTransactionsLoading(false)
+        setTransactionsSubLoading(false)
         unfilteredEvents.current = []
         setEvents([])
         setEventFilters([])
         setEventFiltersChecked({})
         setEventsLoading(false)
+        setEventsSubLoading(false)
         return
       }
 
@@ -285,19 +299,6 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
       }
 
       newEvts.unshift(...epochEvtsRes.data)
-    }
-
-    const versionTimestamps = {}
-
-    for (const tx of newTxs) {
-      versionTimestamps[tx.version] = tx.timestamp
-    }
-
-    for (const evt of newEvts) {
-      if (evt.timestamp) {
-        continue
-      }
-      evt.timestamp = versionTimestamps[evt.transaction_version]
     }
 
     const eventFiltersMap = {}
@@ -322,7 +323,9 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
     setEvents(cloneDeep(unfilteredEvents.current))
 
     setTransactionsLoading(false)
+    setTransactionsSubLoading(false)
     setEventsLoading(false)
+    setEventsSubLoading(false)
   }
 
   const lazyLoad = async (lowercaseAddress, lastEpochMined) => {
@@ -336,11 +339,13 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
         status: validatorPermissionTreeStatus,
       },
       { data: minerPermissionTreeRes, status: minerPermissionTreeStatus },
+      { data: operatorPermissionTreeRes, status: operatorPermissionTreeStatus },
     ] = await Promise.all([
       getEvents({ key: eventsKey, start: 0, limit: 1000 }),
       getMinerProofHistory(lowercaseAddress),
       getValidatorPermissionTree(lowercaseAddress),
       getMinerPermissionTree(lowercaseAddress),
+      getOperatorPermissionTree(lowercaseAddress),
     ])
     const nonZeroEvents = []
     if (eventsRes) {
@@ -395,7 +400,12 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
       }
     }
 
-    if (
+    if (operatorPermissionTreeStatus === 200) {
+      validatorAccountCreatedBy = operatorPermissionTreeRes.parent
+      setValidatorAccountCreatedBy(validatorAccountCreatedBy)
+      operatorAccount = operatorPermissionTreeRes.address
+      setOperatorAccount(operatorAccount)
+    } else if (
       minerPermissionTreeStatus === 404 ||
       validatorPermissionTreeStatus === 404
     ) {
@@ -842,6 +852,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                 <div className={classes.outerHeader}>
                   <div className={classes.header}>
                     <span className={classes.title}>Tx</span>
+                    {transactionsSubLoading && <Spin className={classes.subloading}/>}
                     {blockFilters.length > 0 &&
                     <div className={classes.filterBox}>
                        <a  className={classes.selectLink} onClick={()=> {
@@ -882,6 +893,7 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
                 <div className={classes.outerHeader}>
                   <div className={classes.header}>
                     <span className={classes.title}>Events</span>
+                    {eventsSubLoading && <Spin className={classes.subloading}/>}
                     {eventFilters.length > 0 &&
                     <div className={classes.filterBox}>
                        <a  className={classes.selectLink} onClick={()=> {
