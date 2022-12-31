@@ -227,9 +227,6 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
         evtsProcessing = evtLength === chunkSize
         currentEvt += evtLength
 
-        unfilteredEvents.current = newEvts.sort((a, b) => b.transaction_version - a.transaction_version)
-        setEvents(cloneDeep(unfilteredEvents.current))
-
         if (!evtsProcessing) {
           if (type === 'Validator') {
             const epochEvtsRes = await API.GET('/proxy/node/epoch-events', {
@@ -239,7 +236,6 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
               message.error(
                 `Error fetching epoch events (${epochEvtsRes.status} - ${epochEvtsRes.statusText})`
               )
-              unfilteredEvents.current = []
               setEventsLoading(false)
               setEventsSubLoading(false)
               return
@@ -273,6 +269,9 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
         } else {
           setEventsLoading(false)
         }
+
+        unfilteredEvents.current = newEvts.sort((a, b) => b.transaction_version - a.transaction_version)
+        setEvents(cloneDeep(unfilteredEvents.current))
       }
 
       if (txsProcessing) {
