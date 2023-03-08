@@ -464,7 +464,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       transactionsStatus = status
     }
 
-    console.log({transactionsRes: transactionsRes.result})
+    // console.log({transactionsRes: transactionsRes.result})
 
     const transactions: TransactionMin[] =
       transactionsStatus === 200 && transactionsRes.result
