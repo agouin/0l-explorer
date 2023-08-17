@@ -66,7 +66,7 @@ const startVitals = async () => {
         })
       }
       sse.onerror = (err) => {
-        console.error('Event source error', err)
+        console.error(`Event source error: ${err}`)
         sse.close()
         setTimeout(startVitals, 10000)
       }

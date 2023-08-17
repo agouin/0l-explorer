@@ -560,7 +560,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       },
     }
   } catch (err) {
-    console.error(err)
+    console.error(`Index error: ${err}`)
     return {
       props: {
         error: true,

@@ -494,8 +494,8 @@ const AddressPage = ({ account, towerState, errors }: AddressPageProps) => {
       )
     }
     if (errors.length > 0) {
-      console.error(errors)
       for (const error of errors) {
+        console.error(`Address error: ${error.message} (${error.code})`)
         message.error(`${error.message} (${error.code})`)
       }
     }

@@ -139,7 +139,7 @@ const EpochsTable = ({
 
     if (epochsRes.status !== 200) {
       message.error(`Error getting epochs: ${epochsRes.statusText}`)
-      console.error(epochsRes)
+      console.error(`Error getting epochs: ${epochsRes}`)
       setLoading(false)
       return
     }
