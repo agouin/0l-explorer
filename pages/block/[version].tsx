@@ -81,7 +81,7 @@ const TransactionPage = ({ transaction }: { transaction: Transaction }) => {
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const { version } = ctx.params
-  console.log('Fetching tx', version)
+  console.log('Fetching version', version, ctx.req.headers, ctx.req.connection.remoteAddress)
   const versionSingle = Array.isArray(version) ? version[0] : version
   const { data: transactionRes, status: transactionStatus } =
     await getTransactions({
